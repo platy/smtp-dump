@@ -3,7 +3,7 @@
 - [x] fetch & strip a regular document
 - [x] fetch & strip linked html document
 - [x] fetch other document
-- [ ] read update info from document
+- [x] read update info from document
 - [ ] parse email
 - [ ] listen for emails
 - [ ] save & make commits

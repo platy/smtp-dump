@@ -1,5 +1,5 @@
 use futures_lite::future;
-use gitgov_rs::{remove_ids, retrieve_doc, Doc, DocContent};
+use gitgov_rs::{remove_ids, retrieve_doc, Doc, DocContent, DocUpdate};
 use pretty_assertions::assert_eq;
 
 #[test]
@@ -14,6 +14,10 @@ fn fetch_and_strip_doc() {
         &doc,
         "https://www.gov.uk/change-name-deed-poll/make-an-adult-deed-poll",
         include_str!("govuk/change-name-deed-poll/make-an-adult-deed-poll.html"),
+    );
+    assert_eq!(
+        doc.content.history().unwrap(),
+        vec![], // no history due to the type of doc
     );
 }
 
@@ -37,6 +41,23 @@ fn fetch_and_strip_doc_with_attachments() {
             "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/722573/bus-services-act-2017-open-data-consultation.pdf".parse().unwrap(), 
             "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/722576/bus-open-data-case-for-change.pdf".parse().unwrap(),
         ]);
+    assert_eq!(
+        doc.content.history().unwrap(),
+        vec![
+            DocUpdate::new(
+                "2019-03-27T15:21:23.000+00:00".parse().unwrap(),
+                "Document revised for missing data in table 3."
+            ),
+            DocUpdate::new(
+                "2019-03-26T00:15:02.000+00:00".parse().unwrap(),
+                "Consultation response released."
+            ),
+            DocUpdate::new(
+                "2018-07-05T00:15:03.000+01:00".parse().unwrap(),
+                "First published."
+            ),
+        ]
+    );
 }
 
 #[test]
@@ -55,7 +76,7 @@ fn fetch_file() {
 
 fn assert_doc(doc: &Doc, url: &str, body: &str) {
     assert_eq!(doc.url.as_str(), url,);
-    if let DocContent::DiffableHtml(content) = &doc.content {
+    if let DocContent::DiffableHtml(content, _) = &doc.content {
         let diff = html_diff::get_differences(content, &remove_ids(body)); // TODO pre strip test data
         assert!(
             diff.is_empty(),

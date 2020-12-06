@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use lol_html::{element, rewrite_str, RewriteStrSettings};
 use scraper::{Html, Selector};
 use surf::{get, Url};
@@ -10,29 +11,69 @@ pub struct Doc {
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum DocContent {
-    DiffableHtml(String),
+    DiffableHtml(String, Vec<DocUpdate>),
     Other(Vec<u8>),
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub struct DocUpdate(DateTime<Utc>, String);
+
 impl DocContent {
     fn html(html: &Html) -> Result<Self, &'static str> {
-        let main_selector = Selector::parse("main").unwrap();
+        let main_selector: Selector = Selector::parse("main").unwrap();
         let main = html.select(&main_selector).next().ok_or("No main found")?;
-        Ok(DocContent::DiffableHtml(remove_ids(&main.html())))
+        let history_selector: Selector = Selector::parse("#full-history li").unwrap();
+        let time_selector: Selector = Selector::parse("time").unwrap();
+        let p_selector: Selector = Selector::parse("p").unwrap();
+        let history = html
+            .select(&history_selector)
+            .map(|history_elem| {
+                DocUpdate(
+                    history_elem
+                        .select(&time_selector)
+                        .next()
+                        .unwrap()
+                        .value()
+                        .attr("datetime")
+                        .unwrap()
+                        .parse()
+                        .unwrap(),
+                    history_elem
+                        .select(&p_selector)
+                        .next()
+                        .unwrap()
+                        .inner_html(),
+                )
+            })
+            .collect();
+        Ok(DocContent::DiffableHtml(remove_ids(&main.html()), history))
     }
 
     pub fn is_html(&self) -> bool {
         match self {
-            Self::DiffableHtml(_) => true,
+            Self::DiffableHtml(_, _) => true,
             Self::Other(_) => false,
         }
     }
 
     pub fn as_bytes(&self) -> &[u8] {
         match self {
-            DocContent::DiffableHtml(string) => string.as_bytes(),
+            DocContent::DiffableHtml(string, _) => string.as_bytes(),
             DocContent::Other(bytes) => bytes.as_slice(),
         }
+    }
+
+    pub fn history(&self) -> Option<&[DocUpdate]> {
+        match self {
+            DocContent::DiffableHtml(_, history) => Some(history.as_slice()),
+            DocContent::Other(_) => None,
+        }
+    }
+}
+
+impl DocUpdate {
+    pub fn new(date: DateTime<Utc>, summary: impl Into<String>) -> Self {
+        Self(date, summary.into())
     }
 }
 
