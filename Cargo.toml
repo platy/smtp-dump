@@ -6,10 +6,12 @@ edition = "2018"
 
 [dependencies]
 scraper = "0.12.0"
-surf = "2.1.0"
 lol_html = "0.2.0"
-futures-lite = "1.11.2"
 chrono = "0.4.19"
+mailparse = "0.13.0"
+mailin = "0.4.1"
+ureq = "1.5.1"
+url = "2.1.1"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"

@@ -6,7 +6,6 @@ use std::{
     path::Path,
 };
 
-use futures_lite::future;
 use gitgov_rs::retrieve_doc;
 
 fn main() {
@@ -26,7 +25,7 @@ fn main() {
     urls.push_back(url.parse().unwrap());
 
     while let Some(url) = urls.pop_front() {
-        let (doc, attachments) = future::block_on(retrieve_doc(url)).unwrap();
+        let (doc, attachments) = retrieve_doc(url).unwrap();
         urls.extend(attachments);
 
         let mut path = Path::new(&dir).join(doc.url.path().strip_prefix("/").unwrap());

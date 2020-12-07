@@ -1,7 +1,10 @@
+use std::io::copy;
+
 use chrono::{DateTime, Utc};
 use lol_html::{element, rewrite_str, RewriteStrSettings};
 use scraper::{Html, Selector};
-use surf::{get, Url};
+use ureq::get;
+use url::Url;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Doc {
@@ -110,16 +113,16 @@ pub fn remove_ids(html: &str) -> String {
     .unwrap()
 }
 
-pub async fn retrieve_doc(url: Url) -> Result<(Doc, Vec<Url>), &'static str> {
+pub fn retrieve_doc(url: Url) -> Result<(Doc, Vec<Url>), &'static str> {
     // TODO return the doc and the urls of attachments, probably remove async, I can just use a thread pool and worker queue
     println!("retrieving url : {}", &url);
-    let mut response = get(&url).send().await.map_err(|_| "Error retrieving")?;
+    let response = get(&url.as_str()).call();
+    if let Some(_err) = response.synthetic_error() {
+        return Err("Error retrieving");
+    }
 
-    if response
-        .content_type()
-        .map_or(false, |mime| mime.essence() == "text/html")
-    {
-        let content = response.body_string().await.map_err(|err| {
+    if response.content_type() == "text/html" {
+        let content = response.into_string().map_err(|err| {
             println!("error : {}, url : {}", &err, &url);
             "Error retrieveing document"
         })?;
@@ -135,13 +138,16 @@ pub async fn retrieve_doc(url: Url) -> Result<(Doc, Vec<Url>), &'static str> {
             .collect();
         Ok((doc, attachments))
     } else {
+        let mut reader = response.into_reader();
+        let mut buf = vec![];
+        copy(&mut reader, &mut buf).map_err(|err| {
+            println!("error : {}, url : {}", &err, &url);
+            "Error retrieving attachment"
+        })?;
         Ok((
             Doc {
-                url: url.to_owned(),
-                content: DocContent::Other(response.body_bytes().await.map_err(|err| {
-                    println!("error : {}, url : {}", &err, &url);
-                    "Error retrieving attachment"
-                })?),
+                url: url,
+                content: DocContent::Other(buf),
             },
             vec![],
         ))
