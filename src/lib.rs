@@ -2,6 +2,7 @@ use std::io::copy;
 use ureq::get;
 use url::Url;
 
+pub mod email_update;
 pub mod doc;
 pub use doc::{Doc, DocContent};
 

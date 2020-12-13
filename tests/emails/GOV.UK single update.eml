@@ -1,0 +1,486 @@
+Return-Path: <mpbush+caf_=mike=njk.onl@gmail.com>
+Received: from compute2.internal (compute2.nyi.internal [10.202.2.42])
+	 by sloti38d1t03 (Cyrus 3.3.0-622-g4a97c0b-fm-20201115.001-g4a97c0b3) with LMTPA;
+	 Wed, 09 Dec 2020 07:14:09 -0500
+X-Cyrus-Session-Id: sloti38d1t03-1607516049-1722330-2-6607061507939937986
+X-Sieve: CMU Sieve 3.0
+X-Spam-known-sender: no
+X-Spam-sender-reputation: 1000 (email)
+X-Spam-score: 0.0
+X-Spam-hits: HEADER_FROM_DIFFERENT_DOMAINS 0.249, HTML_FONT_LOW_CONTRAST 0.001,
+  HTML_MESSAGE 0.001, ME_SENDERREP_ALLOW -4, RCVD_IN_DNSWL_NONE -0.0001,
+  RCVD_IN_MSPIKE_H2 -0.001, SPF_PASS -0.001, LANGUAGES en, BAYES_USED none,
+  SA_VERSION 3.4.2
+X-Spam-source: IP='209.85.221.176', Host='mail-vk1-f176.google.com', Country='US',
+  FromHeader='uk', MailFrom='com'
+X-Spam-charsets: subject='UTF-8', plain='UTF-8', html='UTF-8'
+X-Resolved-to: mike@njk.onl
+X-Delivered-to: mike@njk.onl
+X-Original-Delivered-to: mpbush@gmail.com
+X-Mail-from: mpbush+caf_=mike=njk.onl@gmail.com
+Received: from mx5 ([10.202.2.204])
+  by compute2.internal (LMTPProxy); Wed, 09 Dec 2020 07:14:09 -0500
+Received: from mx5.messagingengine.com (localhost [127.0.0.1])
+	by mailmx.nyi.internal (Postfix) with ESMTP id 300B1214011C
+	for <mike@njk.onl>; Wed,  9 Dec 2020 07:14:09 -0500 (EST)
+Received: from mx5.messagingengine.com (localhost [127.0.0.1])
+    by mx5.messagingengine.com (Authentication Milter) with ESMTP
+    id 5F66B94E1E2;
+    Wed, 9 Dec 2020 07:14:09 -0500
+ARC-Seal: i=2; a=rsa-sha256; cv=pass; d=messagingengine.com; s=fm1; t=
+    1607516049; b=Nh7LEGIQZ9mvZ3aWIeP8rH8tjkM4tRnC2a/xwo2oSVzi5ts7qN
+    Vb/Tu2UmKO7u1Y3xgOjKvp3xRRpvy5DqUHpmvrg+L+FWGj0io3kUF1K/nNXPwlj7
+    cbrAtbpsA3yTB7/7vA73Fs72PG9Vnvs7DokSOfFbnVsFadrAFDxzz+l4foFeYMZ4
+    h1y0u6RFzxrSqkEGRVlEb45yBn69y58SthXprIoWq1taGc0ekd7xCBbwi6woS10O
+    BTsohFlmqOMWbkBtZFki4dIvj7JdZMe17Q847hVnAPZL/KEcZHFvLwuR+X9aJrqR
+    fFBj9aTF9126ZPRUT8+b2JuCII9lxpY9HwsQ==
+ARC-Message-Signature: i=2; a=rsa-sha256; c=relaxed/relaxed; d=
+    messagingengine.com; h=from:reply-to:to:subject:mime-version
+    :content-type:message-id:date; s=fm1; t=1607516049; bh=4QsqMWaMb
+    JDO16CPSvqsf0fcbwvCA5lGi9rbpMXK0kk=; b=YNn2LfYZmQRCZuaLAMKTPycvs
+    4AZF0GvAReH/ScEBSWvIyTnSjakW8D4BCNU+qY8W0pMOCH8ODj6v0n5YUtBL9mB1
+    nGhJ4UxCzB7qBjMkZ2b/1NyAEnnIaXyyYWdE0y6rh2qVnwBsDDffofvYMM3sC/7x
+    0BiK8DSdhp4rBW03MIxNS1GHPAA9c13q4XjupUk5hCJ7M/j8uAcCZSJP4T+1s09f
+    o6MQgUSUQ4/Do5udGCAYmViuEE8AbyoJ5WQljJAQBLA5ZMeBHN+Kk0+Xxr0rcpKi
+    ye6Xs9O/yUh4hqWmDuKEai7TsGcYahAPbFU/l4hX2+jrtArTNOV+wtAxxcvEw==
+ARC-Authentication-Results: i=2; mx5.messagingengine.com;
+    arc=pass (as.1.google.com=pass, ams.1.google.com=pass)
+    smtp.remote-ip=209.85.221.176;
+    bimi=none (No BIMI records found);
+    dkim=pass (1024-bit rsa key sha256) header.d=amazonses.com
+    header.i=@amazonses.com header.b=xCG0H3wv header.a=rsa-sha256
+    header.s=shh3fegwg5fppqsuzphvschd53n6ihuv x-bits=1024;
+    dkim=pass (1024-bit rsa key sha256)
+    header.d=notifications.service.gov.uk
+    header.i=@notifications.service.gov.uk header.b=QjIIqPl4
+    header.a=rsa-sha256 header.s=nxtbmcnibyvdpgybfefagukl3mg67kiw
+    x-bits=1024;
+    dmarc=pass policy.published-domain-policy=reject
+    policy.applied-disposition=none policy.evaluated-disposition=none
+    (p=reject,d=none,d.eval=none) policy.policy-from=p
+    header.from=notifications.service.gov.uk;
+    iprev=pass smtp.remote-ip=209.85.221.176 (mail-vk1-f176.google.com);
+    spf=pass smtp.mailfrom="mpbush+caf_=mike=njk.onl@gmail.com"
+    smtp.helo=mail-vk1-f176.google.com;
+    x-aligned-from=fail;
+    x-arc-spf=pass
+    (google.com: domain of 01020176476c3d8f-b335ec62-717a-4e3c-afd2-8bd221ff3a90-000000@mail.notifications.service.gov.uk designates 23.251.239.71 as permitted sender)
+    smtp.mailfrom=
+    01020176476c3d8f-b335ec62-717a-4e3c-afd2-8bd221ff3a90-000000@mail.notifications.service.gov.uk
+    x-arc-instance=1 x-arc-domain=google.com
+    (Trusted from aar.1.google.com);
+    x-google-dkim=fail (message has been altered, 2048-bit rsa key)
+    header.d=1e100.net header.i=@1e100.net header.b=ljjO+Gen;
+    x-ptr=pass smtp.helo=mail-vk1-f176.google.com
+    policy.ptr=mail-vk1-f176.google.com;
+    x-return-mx=fail header.domain=notifications.service.gov.uk
+    policy.is_org=yes policy.mx_error=NOERROR policy.a_error=NOERROR
+    policy.aaaa_error=NOERROR;
+    x-return-mx=pass smtp.domain=gmail.com policy.is_org=yes
+    (MX Records found: gmail-smtp-in.l.google.com,alt1.gmail-smtp-in.l.google.com,alt2.gmail-smtp-in.l.google.com,alt4.gmail-smtp-in.l.google.com,alt3.gmail-smtp-in.l.google.com);
+    x-tls=pass smtp.version=TLSv1.3 smtp.cipher=TLS_AES_256_GCM_SHA384
+    smtp.bits=256/256;
+    x-vs=clean score=50 state=0
+Authentication-Results: mx5.messagingengine.com;
+    arc=pass (as.1.google.com=pass, ams.1.google.com=pass)
+      smtp.remote-ip=209.85.221.176;
+    bimi=none (No BIMI records found);
+    dkim=pass (1024-bit rsa key sha256) header.d=amazonses.com
+      header.i=@amazonses.com header.b=xCG0H3wv header.a=rsa-sha256
+      header.s=shh3fegwg5fppqsuzphvschd53n6ihuv x-bits=1024;
+    dkim=pass (1024-bit rsa key sha256)
+      header.d=notifications.service.gov.uk
+      header.i=@notifications.service.gov.uk header.b=QjIIqPl4
+      header.a=rsa-sha256 header.s=nxtbmcnibyvdpgybfefagukl3mg67kiw
+      x-bits=1024;
+    dmarc=pass policy.published-domain-policy=reject
+      policy.applied-disposition=none policy.evaluated-disposition=none
+      (p=reject,d=none,d.eval=none) policy.policy-from=p
+      header.from=notifications.service.gov.uk;
+    iprev=pass smtp.remote-ip=209.85.221.176 (mail-vk1-f176.google.com);
+    spf=pass smtp.mailfrom="mpbush+caf_=mike=njk.onl@gmail.com"
+      smtp.helo=mail-vk1-f176.google.com;
+    x-aligned-from=fail;
+    x-arc-spf=pass
+      (google.com: domain of 01020176476c3d8f-b335ec62-717a-4e3c-afd2-8bd221ff3a90-000000@mail.notifications.service.gov.uk designates 23.251.239.71 as permitted sender)
+      smtp.mailfrom=
+      01020176476c3d8f-b335ec62-717a-4e3c-afd2-8bd221ff3a90-000000@mail.notifications.service.gov.uk
+      x-arc-instance=1 x-arc-domain=google.com
+      (Trusted from aar.1.google.com);
+    x-google-dkim=fail (message has been altered, 2048-bit rsa key)
+      header.d=1e100.net header.i=@1e100.net header.b=ljjO+Gen;
+    x-ptr=pass smtp.helo=mail-vk1-f176.google.com
+      policy.ptr=mail-vk1-f176.google.com;
+    x-return-mx=fail header.domain=notifications.service.gov.uk
+      policy.is_org=yes policy.mx_error=NOERROR policy.a_error=NOERROR
+      policy.aaaa_error=NOERROR;
+    x-return-mx=pass smtp.domain=gmail.com policy.is_org=yes
+      (MX Records found: gmail-smtp-in.l.google.com,alt1.gmail-smtp-in.l.google.com,alt2.gmail-smtp-in.l.google.com,alt4.gmail-smtp-in.l.google.com,alt3.gmail-smtp-in.l.google.com);
+    x-tls=pass smtp.version=TLSv1.3 smtp.cipher=TLS_AES_256_GCM_SHA384
+      smtp.bits=256/256;
+    x-vs=clean score=50 state=0
+X-ME-VSSU: VW5zdWI9aHR0cHM6Ly93d3cuZ292LnVrL2VtYWlsL21hbmFnZS9hdXRoZW50aWNhdGU_YW
+    RkcmVzcz1tcGJ1c2glNDBnbWFpbC5jb20
+X-ME-VSCause: gggruggvucftvghtrhhoucdtuddrgedujedrudejkedgfeelucetufdoteggodetrfdotf
+    fvucfrrhhofhhilhgvmecuhfgrshhtofgrihhlpdggtfgfnhhsuhgsshgtrhhisggvpdfu
+    rfetoffkrfgpnffqhgenuceurghilhhouhhtmecufedttdenucdhkfhnvhhishhisghlvg
+    cufihorhgushculdehtddmnecujfgurhephfhrvffugggtkfffsegrtdersgdttdejnecu
+    hfhrohhmpedfiffqggdrfgfmucfgmhgrihhlfdcuoehgohhvrdhukhdrvghmrghilhesnh
+    hothhifhhitggrthhiohhnshdrshgvrhhvihgtvgdrghhovhdruhhkqeenucggtffrrght
+    thgvrhhnpeekfeehtdfghfdtfeegkedugeffteeggeevfeeikeffhfevuefgleegfeffhf
+    egudenucffohhmrghinhepfiiffidrghhovhdruhhknecukfhppedvtdelrdekhedrvddv
+    uddrudejiedpvdefrddvhedurddvfeelrdejudenucevlhhushhtvghrufhiiigvpedtne
+    curfgrrhgrmhepihhnvghtpedvtdelrdekhedrvddvuddrudejiedphhgvlhhopehmrghi
+    lhdqvhhkuddqfhdujeeirdhgohhoghhlvgdrtghomhdpmhgrihhlfhhrohhmpeeomhhpsg
+    hushhhodgtrghfpgepmhhikhgvpehnjhhkrdhonhhlsehgmhgrihhlrdgtohhmqe
+X-ME-VSScore: 50
+X-ME-VSCategory: clean
+Received-SPF: pass
+    (gmail.com ... _spf.google.com: Sender is authorized to use 'mpbush+caf_=mike=njk.onl@gmail.com' in 'mfrom' identity (mechanism 'include:_netblocks.google.com' matched))
+    receiver=mx5.messagingengine.com;
+    identity=mailfrom;
+    envelope-from="mpbush+caf_=mike=njk.onl@gmail.com";
+    helo=mail-vk1-f176.google.com;
+    client-ip=209.85.221.176
+Received: from mail-vk1-f176.google.com (mail-vk1-f176.google.com [209.85.221.176])
+	(using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384 (256/256 bits)
+	 key-exchange X25519 server-signature RSA-PSS (2048 bits) server-digest SHA256)
+	(No client certificate requested)
+	by mx5.messagingengine.com (Postfix) with ESMTPS
+	for <mike@njk.onl>; Wed,  9 Dec 2020 07:14:09 -0500 (EST)
+Received: by mail-vk1-f176.google.com with SMTP id v3so276932vkb.1
+        for <mike@njk.onl>; Wed, 09 Dec 2020 04:14:08 -0800 (PST)
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20161025;
+        h=x-gm-message-state:delivered-to:dkim-signature:dkim-signature:from
+         :reply-to:to:subject:mime-version:message-id:date:feedback-id;
+        bh=4QsqMWaMbJDO16CPSvqsf0fcbwvCA5lGi9rbpMXK0kk=;
+        b=ljjO+GenSzC8FUxAs8Z3cx41zVLPzCe3Lpq5lpkTDxmyCKWhyVxu7swg7m0A3Q93xA
+         XyZuTUMtUTr2vZvS4Zih9i5f9M0fio7/ElwD9Jz/K76CibS/a6bWhUcQsp3+bucx5UPd
+         prkJLNYLxtq3N6TtjBoRn/rPASb3tOLIycf+/jmeu6x905bPt7Wlx8QfaoNnHL+W9SjP
+         jxHinT4Ni2i7Vw0+fXUpYqwJayhqDhWHQV3afQZZnB9sSPBWdHqjADn+/fKUPM1yWpnK
+         MlyqFu295pNoxjNl4lHois4IJOAajUHi8QS6j281yaTWhxPt5HQ8r4eabUDtTWxvGgr5
+         jZSw==
+X-Gm-Message-State: AOAM531f6PudQGGWrDx4lWSEhMufcnhrtARDlxzLfdGDlikSm744e1lc
+	Ec9chQ15VLD6hCBY66SEyiviidaDRzPr1+dK0gdKVlAXn5/LqCPaAB5L
+X-Received: by 2002:a1f:a2c2:: with SMTP id l185mr1328104vke.24.1607516047697;
+        Wed, 09 Dec 2020 04:14:07 -0800 (PST)
+X-Forwarded-To: mike@njk.onl
+X-Forwarded-For: mpbush@gmail.com mike@njk.onl
+X-Remote-Delivered-To: mpbush@gmail.com
+Received: by 2002:ab0:71c8:0:0:0:0:0 with SMTP id n8csp4848543uao;
+        Wed, 9 Dec 2020 04:14:05 -0800 (PST)
+X-Google-Smtp-Source: ABdhPJz48OBAlb15rREIuQ961lqiZNNY2bgycVfYUo50V6Ip1gKpcm3+5GzCgjbx5+JTRsy1Z/Xg
+X-Received: by 2002:a1c:6484:: with SMTP id y126mr2485988wmb.76.1607516045299;
+        Wed, 09 Dec 2020 04:14:05 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1607516045; cv=none;
+        d=google.com; s=arc-20160816;
+        b=dE4CGtqfJi00QfVndf056ffmGdlNbAFbf2tOpzUT8rkHpvGG5vct8YQJ+6mWz9RNkH
+         cKITYNno0FoSdjSZFQxzEUjWBo9ofs+dYW8d8Y1c260EmB/Y04TeQ+lN17gVeHDZ0bOq
+         Jo8So+fwZeyXVZXU867+cuWF8TRip6frCK8wHc1Yzsg7Zk1cc0iy34n9IvNQENvchWB/
+         U0CwA6uufcBg7BldJO4xFDadKuBh8VT0qjLg8aQudCv05agPjxehZwzT2Q1LB9XnMU2V
+         E4H1LIliMBmwrGrOqqD79xo04vkdAqohwSq8Bhi6TCn5wh4pTMpJrXzimRKnukYSf8Kf
+         5Oew==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20160816;
+        h=feedback-id:date:message-id:mime-version:subject:to:reply-to:from
+         :dkim-signature:dkim-signature;
+        bh=4QsqMWaMbJDO16CPSvqsf0fcbwvCA5lGi9rbpMXK0kk=;
+        b=A63zjkOUwIqMro42a2UWhMylAaFOsOU3Rf4JlBukAw6kzV/OhMkzu7NUof4nONUKs7
+         H3HQzTeYS6iexwp6ZpqZYcp5abqJ2Crlse542nGQ/rjLMR/3AtUY6hHMmd+L1o3V9x3+
+         GRCQpaWkt7+6YLoWsThYQukmOTYZXTtMGWFT4MSJWot8qHzSAmP3IYUAFvED0p+8kQGL
+         K6Z2U4gQeRWw1h/srHC6r0RCZUm+gUFk6CCy70OgrgxQv71yJJbwXDKrewiFZRZHkBvB
+         iFnoRxOrEjQWh37cLdHUShDyRFCVhIOq2jq9JCCSFjvuZsHDerEcyZPG9+YkCCyie5Vs
+         WAuA==
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@notifications.service.gov.uk header.s=nxtbmcnibyvdpgybfefagukl3mg67kiw header.b=QjIIqPl4;
+       dkim=pass header.i=@amazonses.com header.s=shh3fegwg5fppqsuzphvschd53n6ihuv header.b=xCG0H3wv;
+       spf=pass (google.com: domain of 01020176476c3d8f-b335ec62-717a-4e3c-afd2-8bd221ff3a90-000000@mail.notifications.service.gov.uk designates 23.251.239.71 as permitted sender) smtp.mailfrom=01020176476c3d8f-b335ec62-717a-4e3c-afd2-8bd221ff3a90-000000@mail.notifications.service.gov.uk;
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=notifications.service.gov.uk
+Received: from e239-71.smtp-out.eu-west-1.amazonses.com (e239-71.smtp-out.eu-west-1.amazonses.com. [23.251.239.71])
+        by mx.google.com with ESMTPS id s4si1446737wro.485.2020.12.09.04.14.05
+        for <mpbush@gmail.com>
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-SHA bits=128/128);
+        Wed, 09 Dec 2020 04:14:05 -0800 (PST)
+Received-SPF: pass (google.com: domain of 01020176476c3d8f-b335ec62-717a-4e3c-afd2-8bd221ff3a90-000000@mail.notifications.service.gov.uk designates 23.251.239.71 as permitted sender) client-ip=23.251.239.71;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@notifications.service.gov.uk header.s=nxtbmcnibyvdpgybfefagukl3mg67kiw header.b=QjIIqPl4;
+       dkim=pass header.i=@amazonses.com header.s=shh3fegwg5fppqsuzphvschd53n6ihuv header.b=xCG0H3wv;
+       spf=pass (google.com: domain of 01020176476c3d8f-b335ec62-717a-4e3c-afd2-8bd221ff3a90-000000@mail.notifications.service.gov.uk designates 23.251.239.71 as permitted sender) smtp.mailfrom=01020176476c3d8f-b335ec62-717a-4e3c-afd2-8bd221ff3a90-000000@mail.notifications.service.gov.uk;
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=notifications.service.gov.uk
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=nxtbmcnibyvdpgybfefagukl3mg67kiw; d=notifications.service.gov.uk;
+	t=1607516045;
+	h=From:Reply-To:To:Subject:MIME-Version:Content-Type:Message-ID:Date;
+	bh=XE7TzIo7LZwQcKmmvAKKr8c0whFfeo3NJu7FrVY+1i0=;
+	b=QjIIqPl4FqV2TIA4aaN8EtUJlzi13M7NBQL/WQMGqoxYjJZTslfh7vTjETqKkYdy
+	znQ+uoZODsGl4Z6sE1S4Ks0/rn7TZTqAzkw5Q7f7uAshbqNFl+GERAKZY/YH7zScSRK
+	Q9M43DW12LZUEeRc/cx/7GRKAJuCR0GMxKxLQLqk=
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=shh3fegwg5fppqsuzphvschd53n6ihuv; d=amazonses.com; t=1607516044;
+	h=From:Reply-To:To:Subject:MIME-Version:Content-Type:Message-ID:Date:Feedback-ID;
+	bh=XE7TzIo7LZwQcKmmvAKKr8c0whFfeo3NJu7FrVY+1i0=;
+	b=xCG0H3wv1JfHtT/DnrRbIhBdhse88IZF4f2zHLy2KHw59lAEMUN0tV6eu7KPJxEM
+	EUrGQsEAO9rMb9XwRRd30zT7P7CwldBBikK3aa+UAm5A3KNfT0ghGvYy9E5rbraI+uY
+	XmKyZYrwFEQ1o2iIgsxIDwaE0K40iiVobIzAGRfg=
+From: "GOV.UK Email" <gov.uk.email@notifications.service.gov.uk>
+Reply-To: govuk-email-support@digital.cabinet-office.gov.uk
+To: mpbush@gmail.com
+Subject: =?UTF-8?Q?Update_from_GOV.UK_=E2=80=93_Germany:_doctors?=
+MIME-Version: 1.0
+Content-Type: multipart/alternative; 
+	boundary="----=_Part_15389417_2109879397.1607516044689"
+Message-ID: <01020176476c3d8f-b335ec62-717a-4e3c-afd2-8bd221ff3a90-000000@eu-west-1.amazonses.com>
+Date: Wed, 9 Dec 2020 12:14:04 +0000
+X-SES-Outgoing: 2020.12.09-23.251.239.71
+Feedback-ID: 1.eu-west-1.M09i2swFYaG/Dh70O3yzfH0X81UVFLYEnO9w5Z7AaS4=:AmazonSES
+
+------=_Part_15389417_2109879397.1607516044689
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Update on GOV.=E2=80=8BUK.
+
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+
+Germany: doctors: https://www.gov.uk/government/publications/germany-list-o=
+f-medical-practitionersfacilities?utm_source=3Dcdef51c7-8616-4f41-a963-e4d6=
+b85d5241&utm_medium=3Demail&utm_campaign=3Dgovuk-notifications&utm_content=
+=3Dimmediate
+
+Page summary
+List of English-speaking medical facilities and practitioners for British n=
+ationals in Germany.
+
+Change made
+Updated Germany Doctors List =E2=80=93 December 2020
+
+Time updated
+12:13pm, 9 December 2020
+
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+
+You=E2=80=99re getting this email because you subscribed to immediate updat=
+es to =E2=80=98Living in Germany=E2=80=99 on GOV.=E2=80=8BUK.
+
+View, unsubscribe or change the frequency of your subscriptions: https://ww=
+w.gov.uk/email/manage/authenticate?address=3Dmpbush%40gmail.com
+
+------=_Part_15389417_2109879397.1607516044689
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org=
+/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns=3D"http://www.w3.org/1999/xhtml" xml:lang=3D"en" lang=3D"en">
+
+<head>
+  <meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dutf-8" =
+/>
+  <meta content=3D"telephone=3Dno" name=3D"format-detection" /> <!-- need t=
+o add formatting for real phone numbers -->
+  <meta name=3D"viewport" content=3D"width=3Ddevice-width" />
+  <title>Update from GOV.UK =E2=80=93 Germany: doctors</title>
+
+  <style type=3D"text/css">
+    @media only screen and (min-device-width: 581px) {
+      .content {
+        width: 580px !important;
+      }
+    }
+    body { margin:0 !important; }
+    div[style*=3D"margin: 16px 0"] { margin:0 !important; }
+  </style>
+
+  <!--[if gte mso 9]>
+    <style type=3D"text/css">
+      li {
+        margin-left: 4px !important;
+      }
+      table {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+    </style>
+  <![endif]-->
+
+</head>
+
+<body style=3D"font-family: Helvetica, Arial, sans-serif;font-size: 16px;ma=
+rgin: 0;color:#0b0c0c;">
+
+<span style=3D"display: none;font-size: 1px;color: #fff; max-height: 0;">Up=
+date on GOV.=E2=80=8BUK. Germany: doctors Page summary List of English-spea=
+king medical facilities and practitioners for British nationals in Germany.=
+ Change made Updated Germany Doctors List =E2=80=93 December 2020 Time upda=
+ted 12:13pm, 9 December 2020 You=E2=80=99re getting t=E2=80=A6</span>
+
+  <table role=3D"presentation" width=3D"100%" style=3D"border-collapse: col=
+lapse;min-width: 100%;width: 100% !important;" cellpadding=3D"0" cellspacin=
+g=3D"0" border=3D"0">
+    <tr>
+      <td width=3D"100%" height=3D"53" bgcolor=3D"#0b0c0c">
+        <!--[if (gte mso 9)|(IE)]>
+          <table role=3D"presentation" width=3D"580" align=3D"center" cellp=
+adding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"border-collapse: colla=
+pse;width: 580px;">
+            <tr>
+              <td>
+        <![endif]-->
+        <table role=3D"presentation" width=3D"100%" style=3D"border-collaps=
+e: collapse;max-width: 580px;" cellpadding=3D"0" cellspacing=3D"0" border=
+=3D"0" align=3D"center">
+          <tr>
+            <td width=3D"70" bgcolor=3D"#0b0c0c" valign=3D"middle">
+              <a href=3D"https://www.gov.uk" title=3D"Go to the GOV.UK home=
+page" style=3D"text-decoration: none;">
+                <table role=3D"presentation" cellpadding=3D"0" cellspacing=
+=3D"0" border=3D"0" style=3D"border-collapse: collapse;">
+                  <tr>
+                    <td style=3D"padding-left: 10px">
+                      <img
+                        src=3D"https://static.notifications.service.gov.uk/=
+images/gov.uk_logotype_crown.png"
+                        alt=3D""
+                        height=3D"32"
+                        border=3D"0"
+                        style=3D"Margin-top: 4px;"
+                      />
+                    </td>
+                    <td style=3D"font-size: 28px; line-height: 1.315789474;=
+ Margin-top: 4px; padding-left: 10px;">
+                      <span style=3D"
+                        font-family: Helvetica, Arial, sans-serif;
+                        font-weight: 700;
+                        color: #ffffff;
+                        text-decoration: none;
+                        vertical-align:top;
+                        display: inline-block;
+                          ">GOV.UK</span>
+                    </td>
+                  </tr>
+                </table>
+              </a>
+            </td>
+          </tr>
+        </table>
+        <!--[if (gte mso 9)|(IE)]>
+              </td>
+            </tr>
+          </table>
+        <![endif]-->
+      </td>
+    </tr>
+  </table>
+  <table
+      role=3D"presentation"
+      class=3D"content"
+      align=3D"center"
+      cellpadding=3D"0"
+      cellspacing=3D"0"
+      border=3D"0"
+      style=3D"border-collapse: collapse;max-width: 580px; width: 100% !imp=
+ortant;"
+      width=3D"100%"
+  >
+    <tr>
+      <td width=3D"10" height=3D"10" valign=3D"middle"></td>
+      <td>
+        <!--[if (gte mso 9)|(IE)]>
+          <table role=3D"presentation" width=3D"560" align=3D"center" cellp=
+adding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"border-collapse: colla=
+pse;width: 560px;">
+            <tr>
+              <td height=3D"10">
+        <![endif]-->
+                <table role=3D"presentation" width=3D"100%" cellpadding=3D"=
+0" cellspacing=3D"0" border=3D"0" style=3D"border-collapse: collapse;">
+                  <tr>
+                    <td bgcolor=3D"#1D70B8" width=3D"100%" height=3D"10"></=
+td>
+                  </tr>
+                </table>
+        <!--[if (gte mso 9)|(IE)]>
+              </td>
+            </tr>
+          </table>
+        <![endif]-->
+      </td>
+      <td width=3D"10" valign=3D"middle" height=3D"10"></td>
+    </tr>
+  </table>
+
+
+
+  <table
+      role=3D"presentation"
+      class=3D"content"
+      align=3D"center"
+      cellpadding=3D"0"
+      cellspacing=3D"0"
+      border=3D"0"
+      style=3D"border-collapse: collapse;max-width: 580px; width: 100% !imp=
+ortant;"
+      width=3D"100%"
+  >
+    <tr>
+      <td height=3D"30"><br /></td>
+    </tr>
+    <tr>
+      <td width=3D"10" valign=3D"middle"><br /></td>
+      <td style=3D"font-family: Helvetica, Arial, sans-serif; font-size: 19=
+px; line-height: 1.315789474; max-width: 560px;">
+        <!--[if (gte mso 9)|(IE)]>
+          <table role=3D"presentation" width=3D"560" align=3D"center" cellp=
+adding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"border-collapse: colla=
+pse;width: 560px;">
+            <tr>
+              <td style=3D"font-family: Helvetica, Arial, sans-serif; font-=
+size: 19px; line-height: 1.315789474;">
+        <![endif]-->
+            <p style=3D"Margin: 0 0 20px 0; font-size: 19px; line-height: 2=
+5px; color: #0B0C0C;">Update on GOV.=E2=80=8BUK.</p><hr style=3D"border: 0;=
+ height: 1px; background: #B1B4B6; Margin: 30px 0 30px 0;"><p style=3D"Marg=
+in: 0 0 20px 0; font-size: 19px; line-height: 25px; color: #0B0C0C;"><a sty=
+le=3D"word-wrap: break-word; color: #1D70B8;" href=3D"https://www.gov.uk/go=
+vernment/publications/germany-list-of-medical-practitionersfacilities?utm_s=
+ource=3Dcdef51c7-8616-4f41-a963-e4d6b85d5241&amp;utm_medium=3Demail&amp;utm=
+_campaign=3Dgovuk-notifications&amp;utm_content=3Dimmediate">Germany: docto=
+rs</a></p><p style=3D"Margin: 0 0 20px 0; font-size: 19px; line-height: 25p=
+x; color: #0B0C0C;">Page summary<br />List of English-speaking medical faci=
+lities and practitioners for British nationals in Germany.</p><p style=3D"M=
+argin: 0 0 20px 0; font-size: 19px; line-height: 25px; color: #0B0C0C;">Cha=
+nge made<br />Updated Germany Doctors List =E2=80=93 December 2020</p><p st=
+yle=3D"Margin: 0 0 20px 0; font-size: 19px; line-height: 25px; color: #0B0C=
+0C;">Time updated<br />12:13pm, 9 December 2020</p><hr style=3D"border: 0; =
+height: 1px; background: #B1B4B6; Margin: 30px 0 30px 0;"><blockquote style=
+=3D"Margin: 0 0 20px 0; border-left: 10px solid #B1B4B6;padding: 15px 0 0.1=
+px 15px; font-size: 19px; line-height: 25px;"><p style=3D"Margin: 0 0 20px =
+0; font-size: 19px; line-height: 25px; color: #0B0C0C;">You=E2=80=99re gett=
+ing this email because you subscribed to immediate updates to =E2=80=98Livi=
+ng in Germany=E2=80=99 on GOV.=E2=80=8BUK.</p></blockquote><p style=3D"Marg=
+in: 0 0 20px 0; font-size: 19px; line-height: 25px; color: #0B0C0C;"><a sty=
+le=3D"word-wrap: break-word; color: #1D70B8;" href=3D"https://www.gov.uk/em=
+ail/manage/authenticate?address=3Dmpbush%40gmail.com">View, unsubscribe or =
+change the frequency of your subscriptions</a></p>
+        <!--[if (gte mso 9)|(IE)]>
+              </td>
+            </tr>
+          </table>
+        <![endif]-->
+      </td>
+      <td width=3D"10" valign=3D"middle"><br /></td>
+    </tr>
+    <tr>
+      <td height=3D"30"><br /></td>
+    </tr>
+  </table>
+
+</body>
+</html>
+
+------=_Part_15389417_2109879397.1607516044689--
