@@ -1,9 +1,12 @@
-use gitgov_rs::{remove_ids, retrieve_doc, Doc, DocContent, DocUpdate};
+use gitgov_rs::{
+    doc::{remove_ids, DocUpdate},
+    retrieve_doc, Doc, DocContent,
+};
 use pretty_assertions::assert_eq;
 
 #[test]
 fn fetch_and_strip_doc() {
-    let (doc, _) = retrieve_doc(
+    let doc = retrieve_doc(
         "https://www.gov.uk/change-name-deed-poll/make-an-adult-deed-poll"
             .parse()
             .unwrap(),
@@ -22,7 +25,7 @@ fn fetch_and_strip_doc() {
 
 #[test]
 fn fetch_and_strip_doc_with_attachments() {
-    let (doc, attachments) = retrieve_doc(
+    let doc = retrieve_doc(
         "https://www.gov.uk/government/consultations/bus-services-act-2017-bus-open-data"
             .parse()
             .unwrap(),
@@ -33,7 +36,7 @@ fn fetch_and_strip_doc_with_attachments() {
         "https://www.gov.uk/government/consultations/bus-services-act-2017-bus-open-data",
         include_str!("govuk/government/consultations/bus-services-act-2017-bus-open-data.html"),
     );
-    assert_eq!(attachments,
+    assert_eq!(doc.content.attachments().unwrap(),
         vec![
             "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/792313/bus-open-data-consultation-response.pdf".parse().unwrap(), 
             "https://www.gov.uk/government/consultations/bus-services-act-2017-bus-open-data/bus-services-act-2017-bus-open-data-html".parse().unwrap(), 
@@ -61,7 +64,7 @@ fn fetch_and_strip_doc_with_attachments() {
 
 #[test]
 fn fetch_file() {
-    let (doc, attachments) = retrieve_doc(
+    let doc = retrieve_doc(
         "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/722576/bus-open-data-case-for-change.pdf".parse().unwrap(),
     )
     .unwrap();
@@ -70,12 +73,12 @@ fn fetch_file() {
         "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/722576/bus-open-data-case-for-change.pdf",
         include_bytes!("govuk/government/uploads/system/uploads/attachment_data/file/722576/bus-open-data-case-for-change.pdf"),
     );
-    assert!(attachments.is_empty());
+    assert!(doc.content.attachments().is_none());
 }
 
 fn assert_doc(doc: &Doc, url: &str, body: &str) {
     assert_eq!(doc.url.as_str(), url,);
-    if let DocContent::DiffableHtml(content, _) = &doc.content {
+    if let DocContent::DiffableHtml(content, _, _) = &doc.content {
         let diff = html_diff::get_differences(content, &remove_ids(body)); // TODO pre strip test data
         assert!(
             diff.is_empty(),

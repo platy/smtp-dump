@@ -25,8 +25,14 @@ fn main() {
     urls.push_back(url.parse().unwrap());
 
     while let Some(url) = urls.pop_front() {
-        let (doc, attachments) = retrieve_doc(url).unwrap();
-        urls.extend(attachments);
+        let doc = retrieve_doc(url).unwrap();
+        urls.extend(
+            doc.content
+                .attachments()
+                .unwrap_or_default()
+                .iter()
+                .cloned(),
+        );
 
         let mut path = Path::new(&dir).join(doc.url.path().strip_prefix("/").unwrap());
         if doc.content.is_html() {
