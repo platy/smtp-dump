@@ -1,10 +1,5 @@
-use std::{
-    collections::VecDeque,
-    env::args_os,
-    fs::{DirBuilder, File},
-    io::Write,
-    path::Path,
-};
+use std::fs::create_dir_all;
+use std::{collections::VecDeque, env::args_os, fs::File, io::Write, path::Path};
 
 use gitgov_rs::retrieve_doc;
 
@@ -38,9 +33,7 @@ fn main() {
         if doc.content.is_html() {
             assert!(path.set_extension("html"));
         }
-        let _ = DirBuilder::new()
-            .recursive(true)
-            .create(path.parent().unwrap());
+        let _ = create_dir_all(path.parent().unwrap());
         println!("Writing doc to : {}", path.to_str().unwrap());
         let mut file = File::create(path).unwrap();
         file.write_all(doc.content.as_bytes()).unwrap();

@@ -2,8 +2,8 @@ use std::io::copy;
 use ureq::get;
 use url::Url;
 
-pub mod email_update;
 pub mod doc;
+pub mod email_update;
 pub use doc::{Doc, DocContent};
 
 pub fn retrieve_doc(url: Url) -> Result<Doc, &'static str> {
@@ -21,7 +21,7 @@ pub fn retrieve_doc(url: Url) -> Result<Doc, &'static str> {
         })?;
         let doc = Doc {
             content: DocContent::html(&content, Some(&url))?,
-            url: url,
+            url,
         };
 
         Ok(doc)
@@ -33,7 +33,7 @@ pub fn retrieve_doc(url: Url) -> Result<Doc, &'static str> {
             "Error retrieving attachment"
         })?;
         Ok(Doc {
-            url: url,
+            url,
             content: DocContent::Other(buf),
         })
     }

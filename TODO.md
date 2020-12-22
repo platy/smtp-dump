@@ -4,9 +4,13 @@
 - [x] fetch & strip linked html document
 - [x] fetch other document
 - [x] read update info from document
-- [ ] parse email
-- [ ] listen for emails
-- [ ] save & make commits
+- [x] parse email
+- [x] listen for emails
+- [x] save docs
+- [ ] make commits
+- [ ] server integration test
+- [ ] remove unwraps
+- [ ] deploy server running alongside existing one
 
 Then db cleanup, including these features
 - read the update info from the document
