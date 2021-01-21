@@ -1,5 +1,10 @@
-use std::fs::create_dir_all;
-use std::{collections::VecDeque, env::args_os, fs::File, io::Write, path::Path};
+use std::{
+    collections::VecDeque,
+    env::args_os,
+    fs::{create_dir_all, File},
+    io::Write,
+    path::Path,
+};
 
 use gitgov_rs::retrieve_doc;
 
@@ -21,13 +26,7 @@ fn main() {
 
     while let Some(url) = urls.pop_front() {
         let doc = retrieve_doc(url).unwrap();
-        urls.extend(
-            doc.content
-                .attachments()
-                .unwrap_or_default()
-                .iter()
-                .cloned(),
-        );
+        urls.extend(doc.content.attachments().unwrap_or_default().iter().cloned());
 
         let mut path = Path::new(&dir).join(doc.url.path().strip_prefix("/").unwrap());
         if doc.content.is_html() {

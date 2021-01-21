@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use lol_html::{element, rewrite_str, RewriteStrSettings};
 use scraper::{Html, Selector};
@@ -19,11 +20,11 @@ pub enum DocContent {
 pub struct DocUpdate(DateTime<Utc>, String);
 
 impl DocContent {
-    pub fn html(html: &str, url: Option<&Url>) -> Result<Self, &'static str> {
+    pub fn html(html: &str, url: Option<&Url>) -> Result<Self> {
         let html = Html::parse_document(html);
 
         let main_selector: Selector = Selector::parse("main").unwrap();
-        let main = html.select(&main_selector).next().ok_or("No main found")?;
+        let main = html.select(&main_selector).next().context("No main found")?;
         let history_selector: Selector = Selector::parse("#full-history li").unwrap();
         let time_selector: Selector = Selector::parse("time").unwrap();
         let p_selector: Selector = Selector::parse("p").unwrap();
@@ -40,11 +41,7 @@ impl DocContent {
                         .unwrap()
                         .parse()
                         .unwrap(),
-                    history_elem
-                        .select(&p_selector)
-                        .next()
-                        .unwrap()
-                        .inner_html(),
+                    history_elem.select(&p_selector).next().unwrap().inner_html(),
                 )
             })
             .collect();
@@ -58,11 +55,7 @@ impl DocContent {
                 }
             })
             .collect();
-        Ok(DocContent::DiffableHtml(
-            remove_ids(&main.html()),
-            attachments,
-            history,
-        ))
+        Ok(DocContent::DiffableHtml(remove_ids(&main.html()), attachments, history))
     }
 
     pub fn is_html(&self) -> bool {
@@ -134,8 +127,7 @@ pub fn remove_ids(html: &str) -> String {
 }
 
 fn attachments(html: &Html) -> Vec<String> {
-    let attachment_selector =
-        Selector::parse(".attachment .title a, .attachment .download a").unwrap();
+    let attachment_selector = Selector::parse(".attachment .title a, .attachment .download a").unwrap();
     let attachments = html
         .select(&attachment_selector)
         .map(|el| el.value().attr("href"))

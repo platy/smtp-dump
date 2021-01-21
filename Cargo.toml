@@ -14,6 +14,9 @@ mailparse = "0.13.0"
 mailin = "0.4.1"
 ureq = "1.5.1"
 url = "2.1.1"
+git2 = "0.13.12"
+anyhow = "1.0.33"
+dotenv = "0.15.0"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"

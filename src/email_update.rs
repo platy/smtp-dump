@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use scraper::{ElementRef, Html, Selector};
 use url::Url;
 
@@ -9,8 +10,7 @@ pub struct GovUkChange {
 }
 
 impl GovUkChange {
-    pub fn from_email_html(html: &str) -> Result<Vec<GovUkChange>, &'static str> {
-        println!("html {}", html);
+    pub fn from_email_html(html: &str) -> Result<Vec<GovUkChange>> {
         let html = Html::parse_document(html);
 
         let p = Selector::parse("p").unwrap();
@@ -36,36 +36,36 @@ impl GovUkChange {
         }])
     }
 
-    pub fn from_eml(eml: &str) -> Result<Vec<GovUkChange>, &'static str> {
-        let email = mailparse::parse_mail(eml.as_bytes()).map_err(|_| "failed to parse email")?;
-        let body = email.subparts[1]
-            .get_body()
-            .map_err(|_| "failed to parse email body")?;
+    pub fn from_eml(eml: &str) -> Result<Vec<GovUkChange>> {
+        let email = mailparse::parse_mail(eml.as_bytes()).context("failed to parse email")?;
+        let part = email
+            .subparts
+            .into_iter()
+            .find(|part| part.ctype.mimetype == "text/html")
+            .context("Email doesn't have text/html part")?;
+        let body = part.get_body().context("failed to parse email body")?;
         GovUkChange::from_email_html(&body)
     }
 }
 
 #[test]
 fn test_email_parse() {
-    let updates =
-        GovUkChange::from_eml(include_str!("../tests/emails/GOV.UK single update.eml")).unwrap();
+    let updates = GovUkChange::from_eml(include_str!("../tests/emails/GOV.UK single update.eml")).unwrap();
     assert_eq!(
         updates,
-        vec![
-            GovUkChange {
-                change: "Updated Germany Doctors List – December 2020".to_owned(),
-                updated_at: "12:13pm, 9 December 2020".to_owned(),
-                url: "https://www.gov.uk/government/publications/germany-list-of-medical-practitionersfacilities".parse().unwrap(),
-            }
-        ]
+        vec![GovUkChange {
+            change: "Updated Germany Doctors List – December 2020".to_owned(),
+            updated_at: "12:13pm, 9 December 2020".to_owned(),
+            url: "https://www.gov.uk/government/publications/germany-list-of-medical-practitionersfacilities"
+                .parse()
+                .unwrap(),
+        }]
     )
 }
 
 #[test]
 fn test_html_parse() {
-    let updates =
-        GovUkChange::from_email_html(include_str!("../tests/emails/new-email-format.html"))
-            .unwrap();
+    let updates = GovUkChange::from_email_html(include_str!("../tests/emails/new-email-format.html")).unwrap();
     assert_eq!(
         updates,
         vec![GovUkChange {

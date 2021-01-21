@@ -7,7 +7,7 @@
 - [x] parse email
 - [x] listen for emails
 - [x] save docs
-- [ ] make commits
+- [x] make commits
 - [ ] server integration test
 - [ ] remove unwraps
 - [ ] deploy server running alongside existing one

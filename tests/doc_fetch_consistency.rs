@@ -1,6 +1,8 @@
 use gitgov_rs::{
     doc::{remove_ids, DocUpdate},
-    retrieve_doc, Doc, DocContent,
+    retrieve_doc,
+    Doc,
+    DocContent,
 };
 use pretty_assertions::assert_eq;
 
@@ -54,10 +56,7 @@ fn fetch_and_strip_doc_with_attachments() {
                 "2019-03-26T00:15:02.000+00:00".parse().unwrap(),
                 "Consultation response released."
             ),
-            DocUpdate::new(
-                "2018-07-05T00:15:03.000+01:00".parse().unwrap(),
-                "First published."
-            ),
+            DocUpdate::new("2018-07-05T00:15:03.000+01:00".parse().unwrap(), "First published."),
         ]
     );
 }
@@ -71,7 +70,9 @@ fn fetch_file() {
     assert_file(
         &doc,
         "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/722576/bus-open-data-case-for-change.pdf",
-        include_bytes!("govuk/government/uploads/system/uploads/attachment_data/file/722576/bus-open-data-case-for-change.pdf"),
+        include_bytes!(
+            "govuk/government/uploads/system/uploads/attachment_data/file/722576/bus-open-data-case-for-change.pdf"
+        ),
     );
     assert!(doc.content.attachments().is_none());
 }
