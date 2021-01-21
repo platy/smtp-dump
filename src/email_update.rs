@@ -11,20 +11,40 @@ pub struct GovUkChange {
 
 impl GovUkChange {
     pub fn from_email_html(html: &str) -> Result<Vec<GovUkChange>> {
-        let html = Html::parse_document(html);
-
         let p = Selector::parse("p").unwrap();
-        let mut iter = html.select(&p);
-        assert_eq!(
-            iter.next().unwrap().inner_html().trim_end(),
-            "Update on GOV.\u{200B}UK."
-        );
-        let doc_link_elem = ElementRef::wrap(iter.next().unwrap().first_child().unwrap()).unwrap();
-        let mut url: Url = doc_link_elem.value().attr("href").unwrap().parse().unwrap();
-        let _doc_title = doc_link_elem.inner_html();
-        let _page_summary = iter.next().unwrap().inner_html();
-        let change = iter.next().unwrap().text().nth(1).unwrap().to_owned();
-        let updated_at = iter.next().unwrap().text().nth(1).unwrap().to_owned();
+
+        let html = Html::parse_document(html);
+        let mut ps = html.select(&p);
+
+        {
+            let p = ps.next().context("Missing first <p> with email subject")?;
+            assert_eq!(p.inner_html().trim_end(), "Update on GOV.\u{200B}UK.");
+        }
+        let mut url: Url = {
+            let p = ps.next().context("Missing second <p> with doc title")?;
+            let doc_link_elem = ElementRef::wrap(p.first_child().context("Empty doc title <p>")?).unwrap();
+            let _doc_title = doc_link_elem.inner_html();
+            doc_link_elem
+                .value()
+                .attr("href")
+                .context("No link on doc title")?
+                .parse()?
+        };
+        let _page_summary = {
+            let p = ps.next().context("Missing third <p> with doc summary")?;
+            p.inner_html()
+        };
+        let change = {
+            let p = ps.next().context("Missing forth <p> with change description")?;
+            p.text()
+                .nth(1)
+                .context("Missing change description contents")?
+                .to_owned()
+        };
+        let updated_at = {
+            let p = ps.next().context("Missing fifth <p> with updated timestamp")?;
+            p.text().nth(1).context("Missing timestamp <p> contents")?.to_owned()
+        };
 
         url.set_query(None);
         url.set_fragment(None);

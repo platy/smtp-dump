@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{bail, Context, Result};
 use chrono::{SecondsFormat, Utc};
 use dotenv::dotenv;
 use git2::{Repository, Signature};
@@ -7,6 +7,7 @@ use mailin::{Handler, MailResult, SessionBuilder};
 use std::{
     collections::VecDeque,
     fs::{create_dir_all, read, read_dir, remove_file, File},
+    io,
     io::{BufRead, BufReader},
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
@@ -39,21 +40,24 @@ impl Handler for MailHandler {
     }
 
     fn data(&mut self, _domain: &str, from: &str, _is8bit: bool, to: &[String]) -> mailin::DataResult {
-        let file_path = self
-            .inbox
-            .join(from)
-            .join(to.join(","))
-            .join(Utc::now().to_rfc3339_opts(SecondsFormat::AutoSi, true))
-            .with_extension("eml");
-        create_dir_all(file_path.parent().unwrap()).unwrap();
-        match File::create(file_path) {
-            Ok(file) => mailin::DataResult::Ok(Box::new(file)),
+        match create_file_for_email(&self.inbox, from, to) {
+            Ok(writer) => mailin::DataResult::Ok(Box::new(writer)),
             Err(err) => {
-                println!("Error creating email file to write : {}", err);
-                mailin::DataResult::NoService
+                println!("Error mapping email envelope to inbox : {}", err);
+                mailin::DataResult::InternalError
             }
         }
     }
+}
+
+fn create_file_for_email(inbox: &PathBuf, from: &str, to: &[String]) -> io::Result<File> {
+    let file_path = inbox
+        .join(from)
+        .join(to.join(","))
+        .join(Utc::now().to_rfc3339_opts(SecondsFormat::AutoSi, true))
+        .with_extension("eml");
+    create_dir_all(file_path.parent().unwrap())?;
+    File::create(file_path)
 }
 
 fn main() -> Result<()> {
@@ -64,7 +68,8 @@ fn main() -> Result<()> {
     create_dir_all(EMAILS_FROM_GOVUK_PATH)?;
     thread::spawn(move || {
         loop {
-            process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, &repo_path, &reference).unwrap(); // if the processing fails, the repo may be unclean
+            process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, &repo_path, &reference)
+                .expect("the processing fails, the repo may be unclean");
             yield_now();
         }
     });
@@ -72,7 +77,9 @@ fn main() -> Result<()> {
     let socket = TcpListener::bind("localhost:22122")?;
     loop {
         let (stream, remote_addr) = socket.accept()?;
-        receive_updates_on_socket(stream, remote_addr, "inbox");
+        if let Err(err) = receive_updates_on_socket(stream, remote_addr, "inbox") {
+            println!("Closed SMTP session due to error : {}", err);
+        }
     }
 }
 
@@ -96,34 +103,28 @@ fn process_updates_in_dir(dir: impl AsRef<Path>, repo: impl AsRef<Path>, referen
 }
 
 /// accepts emails from gov.uk and saves them in `inbox/{from}/{to}/{datetime}.eml
-fn receive_updates_on_socket(mut stream: TcpStream, remote_addr: SocketAddr, inbox: impl AsRef<Path>) {
+fn receive_updates_on_socket(mut stream: TcpStream, remote_addr: SocketAddr, inbox: impl AsRef<Path>) -> Result<()> {
     let handler = MailHandler {
         inbox: inbox.as_ref().to_path_buf(),
     };
     let mut session = SessionBuilder::new("gitgov").build(remote_addr.ip(), handler);
-    session.greeting().write_to(&mut stream).unwrap();
+    session.greeting().write_to(&mut stream)?;
 
-    let mut buf_read = BufReader::new(stream.try_clone().unwrap());
+    let mut buf_read = BufReader::new(stream.try_clone()?);
     let mut buf = String::new();
 
     loop {
         buf.clear();
-        let len = buf_read.read_line(&mut buf).unwrap();
+        let len = buf_read.read_line(&mut buf)?;
         let result = session.process(&buf.as_bytes()[..len]);
         match result.action {
             mailin::Action::Close => {
-                result.write_to(&mut stream).unwrap();
-                break;
+                result.write_to(&mut stream)?;
+                break Ok(());
             }
-            mailin::Action::UpgradeTls => panic!("TLS requested"),
+            mailin::Action::UpgradeTls => bail!("TLS requested"),
             mailin::Action::NoReply => continue,
-            mailin::Action::Reply => match result.write_to(&mut stream) {
-                Ok(()) => {}
-                Err(err) => {
-                    println!("Writing SMTP reply failed : {}", &err);
-                    break;
-                }
-            },
+            mailin::Action::Reply => result.write_to(&mut stream).context("Writing SMTP reply failed")?,
         }
     }
 }
@@ -182,7 +183,7 @@ mod test {
         let addr = socket.local_addr().unwrap();
         std::thread::spawn(move || {
             let (stream, remote_addr) = socket.accept().unwrap();
-            receive_updates_on_socket(stream, remote_addr, "tests/tmp/inbox");
+            receive_updates_on_socket(stream, remote_addr, "tests/tmp/inbox").unwrap();
         });
 
         let email = EmailBuilder::new()

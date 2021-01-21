@@ -80,7 +80,7 @@ fn fetch_file() {
 fn assert_doc(doc: &Doc, url: &str, body: &str) {
     assert_eq!(doc.url.as_str(), url,);
     if let DocContent::DiffableHtml(content, _, _) = &doc.content {
-        let diff = html_diff::get_differences(content, &remove_ids(body)); // TODO pre strip test data
+        let diff = html_diff::get_differences(content, &remove_ids(body).unwrap()); // TODO pre strip test data
         assert!(
             diff.is_empty(),
             "Found differences in file at url {} : {:#?}",

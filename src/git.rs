@@ -65,7 +65,7 @@ fn write_to_path_in_tree(
     filemode: i32,
 ) -> Result<()> {
     let mut it = path.splitn(2, '/');
-    let base = it.next().unwrap();
+    let base = it.next().context("write_to_path_in_tree called with empty path")?;
     if let Some(rest) = it.next() {
         // make a tree node
         let child_tree = if let Some(child_entry) = tree_builder.get(base)? {

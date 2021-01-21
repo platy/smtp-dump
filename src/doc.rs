@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{format_err, Context, Result};
 use chrono::{DateTime, Utc};
 use lol_html::{element, rewrite_str, RewriteStrSettings};
 use scraper::{Html, Selector};
@@ -21,41 +21,43 @@ pub struct DocUpdate(DateTime<Utc>, String);
 
 impl DocContent {
     pub fn html(html: &str, url: Option<&Url>) -> Result<Self> {
-        let html = Html::parse_document(html);
-
         let main_selector: Selector = Selector::parse("main").unwrap();
-        let main = html.select(&main_selector).next().context("No main found")?;
         let history_selector: Selector = Selector::parse("#full-history li").unwrap();
         let time_selector: Selector = Selector::parse("time").unwrap();
         let p_selector: Selector = Selector::parse("p").unwrap();
-        let history = html
-            .select(&history_selector)
-            .map(|history_elem| {
-                DocUpdate(
-                    history_elem
-                        .select(&time_selector)
-                        .next()
-                        .unwrap()
-                        .value()
-                        .attr("datetime")
-                        .unwrap()
-                        .parse()
-                        .unwrap(),
-                    history_elem.select(&p_selector).next().unwrap().inner_html(),
-                )
-            })
-            .collect();
-        let attachments = attachments(&html)
-            .into_iter()
-            .map(|a_url| {
-                if let Some(url) = url {
-                    url.join(&a_url).unwrap()
-                } else {
-                    a_url.parse().unwrap()
-                }
-            })
-            .collect();
-        Ok(DocContent::DiffableHtml(remove_ids(&main.html()), attachments, history))
+
+        let html = Html::parse_document(html);
+
+        let main = html.select(&main_selector).next().context("No main found")?;
+        let mut history = vec![];
+        for history_elem in html.select(&history_selector) {
+            let time_elem = history_elem.select(&time_selector).next().context("No time found")?;
+            history.push(DocUpdate(
+                time_elem
+                    .value()
+                    .attr("datetime")
+                    .context("Missing \"datetime\" property on time tag")?
+                    .parse()?,
+                history_elem
+                    .select(&p_selector)
+                    .next()
+                    .context("Missing p tag")?
+                    .inner_html(),
+            ))
+        }
+        let mut attachments = vec![];
+        for attachment_url in attachments_from(&html) {
+            attachments.push(if let Some(url) = url {
+                url.join(&attachment_url)?
+            } else {
+                attachment_url.parse()?
+            });
+        }
+        Ok(DocContent::DiffableHtml(
+            remove_ids(&main.html())?,
+            attachments,
+            history,
+        ))
     }
 
     pub fn is_html(&self) -> bool {
@@ -93,7 +95,7 @@ impl DocUpdate {
     }
 }
 
-pub fn remove_ids(html: &str) -> String {
+pub fn remove_ids(html: &str) -> Result<String> {
     rewrite_str(
         html,
         RewriteStrSettings {
@@ -123,10 +125,10 @@ pub fn remove_ids(html: &str) -> String {
             ..RewriteStrSettings::default()
         },
     )
-    .unwrap()
+    .map_err(|err| format_err!("Error in rewriter : {}", err))
 }
 
-fn attachments(html: &Html) -> Vec<String> {
+fn attachments_from(html: &Html) -> Vec<String> {
     let attachment_selector = Selector::parse(".attachment .title a, .attachment .download a").unwrap();
     let attachments = html
         .select(&attachment_selector)

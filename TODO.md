@@ -9,7 +9,7 @@
 - [x] save docs
 - [x] make commits
 - [ ] server integration test
-- [ ] remove unwraps
+- [x] remove unwraps
 - [ ] deploy server running alongside existing one
 
 Then db cleanup, including these features
