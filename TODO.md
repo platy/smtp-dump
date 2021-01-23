@@ -11,6 +11,13 @@
 - [ ] server integration test
 - [x] remove unwraps
 - [ ] deploy server running alongside existing one
+- [x] don't update commit ref until the whole email has been processed
+- [ ] fix the smtp encoding leftovers in the commit message
+- [ ] correct the commit message
+- [ ] "file blocking tree creation"
+- [ ] add push
+- [ ] clean code
+- [ ] replace server
 
 Then db cleanup, including these features
 - read the update info from the document

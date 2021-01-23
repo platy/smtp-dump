@@ -1,5 +1,5 @@
 use anyhow::{bail, ensure, Context, Result};
-use scraper::{ElementRef, Html, Selector, html};
+use scraper::{html, ElementRef, Html, Selector};
 use url::Url;
 
 #[derive(PartialEq, Debug)]
@@ -46,7 +46,11 @@ fn parse_bulk(html: html::Html) -> Result<Vec<GovUkChange>> {
         let h2 = h2s.next().context("Expected section heading")?;
         h2.inner_html()
     };
-    ensure!(section_name == "Coronavirus (COVID-19)", "Unexpected section title: {:?}", section_name);
+    ensure!(
+        section_name == "Coronavirus (COVID-19)",
+        "Unexpected section title: {:?}",
+        section_name
+    );
     let mut updates = vec![];
     for h2 in h2s {
         if let Some(update) = parse_bulk_update(h2).context("Something missing in part of a bulk update")? {
@@ -145,10 +149,7 @@ fn test_daily_email_parse() {
         },
         updates[0]
     );
-    assert_eq!(
-        updates.len(),
-        60
-    )
+    assert_eq!(updates.len(), 60)
 }
 
 #[test]

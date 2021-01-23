@@ -6,21 +6,18 @@ use git2::{Commit, Oid, Reference, Repository, Signature, Tree, TreeBuilder};
 pub struct CommitBuilder<'repo> {
     repo: &'repo Repository,
     tree_builder: TreeBuilder<'repo>,
-    r#ref: String,
+    parent: Option<Commit<'repo>>,
 }
 
 impl<'repo> CommitBuilder<'repo> {
-    /// Start building a commit on this repository with the specified ref, if the ref doesn't currently exist it will be created
-    pub fn new(repo: &'repo Repository, r#ref: &str) -> Result<Self> {
-        let tree: Option<Tree<'_>> = find_optional_reference(repo, r#ref)?
-            .as_ref()
-            .map(Reference::peel_to_tree)
-            .transpose()?;
+    /// Start building a commit on this repository
+    pub fn new(repo: &'repo Repository, parent: Option<Commit<'repo>>) -> Result<Self, git2::Error> {
+        let tree: Option<Tree<'_>> = parent.as_ref().map(Commit::tree).transpose()?;
         let tree_builder: TreeBuilder<'repo> = repo.treebuilder(tree.as_ref())?;
         Ok(CommitBuilder {
             repo,
             tree_builder,
-            r#ref: r#ref.to_owned(),
+            parent,
         })
     }
 
@@ -35,22 +32,23 @@ impl<'repo> CommitBuilder<'repo> {
     }
 
     /// Writes the built tree, a comit for it and updates the ref
-    pub fn commit(self, author: &Signature, committer: &Signature, message: &str) -> Result<()> {
+    pub fn commit(
+        self,
+        author: &Signature,
+        committer: &Signature,
+        message: &str,
+    ) -> Result<Commit<'repo>, git2::Error> {
         let oid = self.tree_builder.write()?;
         let tree = self.repo.find_tree(oid)?;
-        let parents: Option<Commit> = find_optional_reference(self.repo, &self.r#ref)?
-            .as_ref()
-            .map(Reference::peel_to_commit)
-            .transpose()?;
-        self.repo.commit(
-            Some(self.r#ref.as_str()),
+        let oid = self.repo.commit(
+            None,
             &author,
             &committer,
             message,
             &tree,
-            parents.as_ref().map(|c| vec![c]).unwrap_or_default().as_slice(),
+            self.parent.as_ref().map(|c| vec![c]).unwrap_or_default().as_slice(),
         )?;
-        Ok(())
+        self.repo.find_commit(oid)
     }
 }
 

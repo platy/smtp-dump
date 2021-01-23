@@ -1,7 +1,7 @@
 use anyhow::{bail, Context, Result};
 use chrono::{SecondsFormat, Utc};
 use dotenv::dotenv;
-use git2::{Repository, Signature};
+use git2::{Commit, Repository, Signature};
 use gitgov_rs::{email_update::GovUkChange, git::CommitBuilder, retrieve_doc};
 use mailin::{Handler, MailResult, SessionBuilder};
 use std::{
@@ -76,6 +76,43 @@ fn inbox_path_for_email(inbox: &PathBuf, from: &str, to: &[String]) -> PathBuf {
         .with_extension("eml")
 }
 
+/// accepts emails from gov.uk and saves them in `inbox/{from}/{to}/{datetime}.eml
+fn receive_updates_on_socket(mut stream: TcpStream, remote_addr: SocketAddr, inbox: impl AsRef<Path>) -> Result<()> {
+    let peer_addr = stream.peer_addr()?;
+    let handler = MailHandler {
+        peer_addr,
+        inbox: inbox.as_ref().to_path_buf(),
+    };
+    let mut session = SessionBuilder::new("gitgov").build(remote_addr.ip(), handler);
+    session.greeting().write_to(&mut stream)?;
+
+    let mut buf_read = BufReader::new(stream.try_clone()?);
+    let mut command = String::new();
+
+    loop {
+        command.clear();
+        let len = buf_read.read_line(&mut command)?;
+        if len == 0 {
+            break;
+        }
+        let result = session.process(&command.as_bytes());
+        match result.action {
+            mailin::Action::Close => {
+                println!("{}: CLOSE", peer_addr);
+                result.write_to(&mut stream)?;
+                break;
+            }
+            mailin::Action::UpgradeTls => bail!("TLS requested"),
+            mailin::Action::NoReply => continue,
+            mailin::Action::Reply => result.write_to(&mut stream).context(format!(
+                "{}: Writing SMTP reply failed when responding to '{}' with '{:?}'",
+                peer_addr, command, result
+            ))?,
+        }
+    }
+    Ok(())
+}
+
 fn main() -> Result<()> {
     dotenv()?;
     const EMAILS_FROM_GOVUK_PATH: &str = "inbox/mail.notifications.service.gov.uk";
@@ -125,15 +162,25 @@ fn process_email_update_file(
     to_dir_name: impl AsRef<Path>,
     dir_entry: &DirEntry,
     out_dir: impl AsRef<Path>,
-    repo: impl AsRef<Path>,
+    repo_base: impl AsRef<Path>,
     reference: &str,
 ) -> Result<()> {
     let data = read(dir_entry.path())?;
     let updates = GovUkChange::from_eml(&String::from_utf8(data)?)?;
+    let repo = Repository::open(repo_base)?;
+    let mut parent = Some(repo.find_reference(reference)?.peel_to_commit()?);
     for GovUkChange { url, change, .. } in updates {
-        handle_change(url, &repo, &change, reference)?;
+        parent = Some(handle_change(url, &repo, &change, parent)?);
     }
-    // successfully handled, move to outbox
+    // successfully handled, 'commit' the new commits by updating the reference and then move email to outbox
+    if let Some(commit) = parent {
+        let _ref = repo.reference(
+            reference,
+            commit.id(),
+            true,
+            &format!("Added updates from {:?}", dir_entry.path()),
+        )?;
+    }
     rename(
         dir_entry.path(),
         out_dir.as_ref().join(to_dir_name).join(dir_entry.file_name()),
@@ -141,46 +188,13 @@ fn process_email_update_file(
     Ok(())
 }
 
-/// accepts emails from gov.uk and saves them in `inbox/{from}/{to}/{datetime}.eml
-fn receive_updates_on_socket(mut stream: TcpStream, remote_addr: SocketAddr, inbox: impl AsRef<Path>) -> Result<()> {
-    let peer_addr = stream.peer_addr()?;
-    let handler = MailHandler {
-        peer_addr,
-        inbox: inbox.as_ref().to_path_buf(),
-    };
-    let mut session = SessionBuilder::new("gitgov").build(remote_addr.ip(), handler);
-    session.greeting().write_to(&mut stream)?;
-
-    let mut buf_read = BufReader::new(stream.try_clone()?);
-    let mut command = String::new();
-
-    loop {
-        command.clear();
-        let len = buf_read.read_line(&mut command)?;
-        if len == 0 {
-            break;
-        }
-        let result = session.process(&command.as_bytes());
-        match result.action {
-            mailin::Action::Close => {
-                println!("{}: CLOSE", peer_addr);
-                result.write_to(&mut stream)?;
-                break;
-            }
-            mailin::Action::UpgradeTls => bail!("TLS requested"),
-            mailin::Action::NoReply => continue,
-            mailin::Action::Reply => result.write_to(&mut stream).context(format!(
-                "{}: Writing SMTP reply failed when responding to '{}' with '{:?}'",
-                peer_addr, command, result
-            ))?,
-        }
-    }
-    Ok(())
-}
-
-fn handle_change(url: Url, repo_base: impl AsRef<Path>, message: &str, reference: &str) -> Result<()> {
-    let repo = Repository::open(repo_base)?;
-    let mut commit_builder = CommitBuilder::new(&repo, reference)?;
+fn handle_change<'repo>(
+    url: Url,
+    repo: &'repo Repository,
+    message: &str,
+    parent: Option<Commit<'repo>>,
+) -> Result<Commit<'repo>> {
+    let mut commit_builder = CommitBuilder::new(&repo, parent)?;
 
     fetch_change(url, |path, bytes| {
         // write the blob
@@ -190,9 +204,7 @@ fn handle_change(url: Url, repo_base: impl AsRef<Path>, message: &str, reference
 
     let govuk_sig = Signature::now("Gov.uk", "info@gov.uk")?;
     let gitgov_sig = Signature::now("Gitgov", "gitgov@njk.onl")?;
-    commit_builder.commit(&govuk_sig, &gitgov_sig, message)?;
-
-    Ok(())
+    Ok(commit_builder.commit(&govuk_sig, &gitgov_sig, message)?)
 }
 
 fn fetch_change(url: Url, mut write_out: impl FnMut(PathBuf, &[u8]) -> Result<()>) -> Result<()> {
@@ -262,21 +274,20 @@ mod test {
         let _ = std::fs::remove_dir_all(REPO_DIR);
         let repo = Repository::init_bare(REPO_DIR)?;
         let test_sig = Signature::now("name", "email")?;
-        CommitBuilder::new(&repo, GIT_REF)?.commit(&test_sig, &test_sig, "initial commit")?;
+        CommitBuilder::new(&repo, None)?.commit(&test_sig, &test_sig, "initial commit")?;
         // let oid = repo.treebuilder(None)?.write()?;
         // let tree = repo.find_tree(oid)?;
         // repo.commit(Some(GIT_REF), &test_sig, &test_sig, "initial commit", &tree, &[])?;
-        handle_change(
+        let commit = handle_change(
             "https://www.gov.uk/government/consultations/bus-services-act-2017-bus-open-data".parse()?,
-            REPO_DIR,
+            &repo,
             "testing the stuff",
-            GIT_REF,
+            None,
         )?;
 
-        let head_commit = repo.find_reference(GIT_REF)?.peel_to_commit()?;
-        assert_eq!(head_commit.message(), Some("testing the stuff"));
+        assert_eq!(commit.message(), Some("testing the stuff"));
         assert_eq!(
-            head_commit
+            commit
                 .tree()?
                 .get_path(Path::new(
                     "government/consultations/bus-services-act-2017-bus-open-data.html"
@@ -287,7 +298,7 @@ mod test {
                 .size(),
             20122
         );
-        assert_eq!(head_commit.tree()?.get_path(Path::new("government/uploads/system/uploads/attachment_data/file/792313/bus-open-data-consultation-response.pdf"))?.to_object(&repo)?.as_blob().unwrap().size(), 643743);
+        assert_eq!(commit.tree()?.get_path(Path::new("government/uploads/system/uploads/attachment_data/file/792313/bus-open-data-consultation-response.pdf"))?.to_object(&repo)?.as_blob().unwrap().size(), 643743);
         Ok(())
     }
 }
