@@ -80,8 +80,8 @@ fn main() -> Result<()> {
     const ARCHIVE_DIR: &str = "outbox";
     let repo_path = std::env::var("REPO")?;
     let reference = std::env::var("REF")?;
-    create_dir_all(EMAILS_FROM_GOVUK_PATH)?;
-    create_dir_all(ARCHIVE_DIR)?;
+    create_dir_all(EMAILS_FROM_GOVUK_PATH).context(format!("Error trying to create dir {}", EMAILS_FROM_GOVUK_PATH))?;
+    create_dir_all(ARCHIVE_DIR).context(format!("Error trying to create dir {}", ARCHIVE_DIR))?;
     thread::spawn(move || {
         loop {
             process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, ARCHIVE_DIR, &repo_path, &reference)

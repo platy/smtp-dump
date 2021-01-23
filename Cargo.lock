@@ -544,8 +544,6 @@ dependencies = [
  "libc",
  "libgit2-sys",
  "log 0.4.11",
- "openssl-probe",
- "openssl-sys",
  "url",
 ]
 
@@ -740,24 +738,8 @@ checksum = "f4ebdf65ca745126df8824688637aa0535a88900b83362d8ca63893bcf4e8841"
 dependencies = [
  "cc",
  "libc",
- "libssh2-sys",
  "libz-sys",
- "openssl-sys",
  "pkg-config",
-]
-
-[[package]]
-name = "libssh2-sys"
-version = "0.2.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df40b13fe7ea1be9b9dffa365a51273816c345fc1811478b57ed7d964fbfc4ce"
-dependencies = [
- "cc",
- "libc",
- "libz-sys",
- "openssl-sys",
- "pkg-config",
- "vcpkg",
 ]
 
 [[package]]
