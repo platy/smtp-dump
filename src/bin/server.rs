@@ -6,7 +6,7 @@ use gitgov_rs::{email_update::GovUkChange, git::CommitBuilder, retrieve_doc};
 use mailin::{Handler, MailResult, SessionBuilder};
 use std::{
     collections::VecDeque,
-    fs::{create_dir_all, read, read_dir, remove_file, File},
+    fs::{create_dir_all, read, read_dir, rename, DirEntry, File},
     io::{BufRead, BufReader},
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
@@ -28,9 +28,14 @@ impl Handler for MailHandler {
     }
 
     fn mail(&mut self, ip: std::net::IpAddr, domain: &str, from: &str) -> mailin::MailResult {
-        let from_match = dotenv::var("FROM_FILTER").ok().map(|from_filter| from.contains(&from_filter));
+        let from_match = dotenv::var("FROM_FILTER")
+            .ok()
+            .map(|from_filter| from.contains(&from_filter));
         if from_match == Some(false) {
-            println!("{}: {}({}) tried to send some junk, purporting to be {}", self.peer_addr, domain, ip, from);
+            println!(
+                "{}: {}({}) tried to send some junk, purporting to be {}",
+                self.peer_addr, domain, ip, from
+            );
             MailResult::NoService
         } else {
             MailResult::Ok
@@ -45,9 +50,13 @@ impl Handler for MailHandler {
         let email_path = inbox_path_for_email(&self.inbox, from, to);
         match create_dir_all(email_path.parent().unwrap()).and_then(|_| File::create(&email_path)) {
             Ok(file) => {
-                println!("{}: Writing email to {}", self.peer_addr, email_path.to_str().unwrap_or_default());
+                println!(
+                    "{}: Writing email to {}",
+                    self.peer_addr,
+                    email_path.to_str().unwrap_or_default()
+                );
                 mailin::DataResult::Ok(Box::new(file))
-            },
+            }
             Err(err) => {
                 println!("{}: Error mapping email envelope to inbox : {}", self.peer_addr, err);
                 mailin::DataResult::InternalError
@@ -67,13 +76,15 @@ fn inbox_path_for_email(inbox: &PathBuf, from: &str, to: &[String]) -> PathBuf {
 
 fn main() -> Result<()> {
     dotenv()?;
-    const EMAILS_FROM_GOVUK_PATH: &str = "inbox/test@gov.uk";
+    const EMAILS_FROM_GOVUK_PATH: &str = "inbox/mail.notifications.service.gov.uk";
+    const ARCHIVE_DIR: &str = "outbox";
     let repo_path = std::env::var("REPO")?;
     let reference = std::env::var("REF")?;
     create_dir_all(EMAILS_FROM_GOVUK_PATH)?;
+    create_dir_all(ARCHIVE_DIR)?;
     thread::spawn(move || {
         loop {
-            process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, &repo_path, &reference)
+            process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, ARCHIVE_DIR, &repo_path, &reference)
                 .expect("the processing fails, the repo may be unclean");
             yield_now();
         }
@@ -88,22 +99,43 @@ fn main() -> Result<()> {
     }
 }
 
-fn process_updates_in_dir(dir: impl AsRef<Path>, repo: impl AsRef<Path>, reference: &str) -> Result<()> {
-    for to_inbox in read_dir(dir)? {
+fn process_updates_in_dir(
+    in_dir: impl AsRef<Path>,
+    out_dir: impl AsRef<Path>,
+    repo: impl AsRef<Path>,
+    reference: &str,
+) -> Result<()> {
+    for to_inbox in read_dir(in_dir)? {
         let to_inbox = to_inbox?;
         if to_inbox.metadata()?.is_dir() {
             for email in read_dir(to_inbox.path())? {
                 let email = email?;
-                let data = read(email.path())?;
-                let updates = GovUkChange::from_eml(&String::from_utf8(data)?)?;
-                for GovUkChange { url, change, .. } in updates {
-                    handle_change(url, &repo, &change, reference)?;
-                }
-                // successfully handled, delete TODO - move instead?
-                remove_file(email.path())?;
+                process_email_update_file(to_inbox.file_name(), &email, &out_dir, &repo, reference).context(
+                    format!("Failed processing {}", email.path().to_str().unwrap_or_default()),
+                )?;
             }
         }
     }
+    Ok(())
+}
+
+fn process_email_update_file(
+    to_dir_name: impl AsRef<Path>,
+    dir_entry: &DirEntry,
+    out_dir: impl AsRef<Path>,
+    repo: impl AsRef<Path>,
+    reference: &str,
+) -> Result<()> {
+    let data = read(dir_entry.path())?;
+    let updates = GovUkChange::from_eml(&String::from_utf8(data)?)?;
+    for GovUkChange { url, change, .. } in updates {
+        handle_change(url, &repo, &change, reference)?;
+    }
+    // successfully handled, move to outbox
+    rename(
+        dir_entry.path(),
+        out_dir.as_ref().join(to_dir_name).join(dir_entry.file_name()),
+    )?;
     Ok(())
 }
 
@@ -135,9 +167,10 @@ fn receive_updates_on_socket(mut stream: TcpStream, remote_addr: SocketAddr, inb
             }
             mailin::Action::UpgradeTls => bail!("TLS requested"),
             mailin::Action::NoReply => continue,
-            mailin::Action::Reply => {
-                result.write_to(&mut stream).context(format!("{}: Writing SMTP reply failed when responding to '{}' with '{:?}'", peer_addr, command, result))?
-            },
+            mailin::Action::Reply => result.write_to(&mut stream).context(format!(
+                "{}: Writing SMTP reply failed when responding to '{}' with '{:?}'",
+                peer_addr, command, result
+            ))?,
         }
     }
     Ok(())

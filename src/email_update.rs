@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{ensure, Context, Result};
 use scraper::{ElementRef, Html, Selector};
 use url::Url;
 
@@ -18,7 +18,12 @@ impl GovUkChange {
 
         {
             let p = ps.next().context("Missing first <p> with email subject")?;
-            assert_eq!(p.inner_html().trim_end(), "Update on GOV.\u{200B}UK.");
+            let email_title = p.inner_html();
+            ensure!(
+                email_title.trim_end() == "Update on GOV.\u{200B}UK.",
+                "Unexpected email title '{}'",
+                email_title.trim_end()
+            );
         }
         let mut url: Url = {
             let p = ps.next().context("Missing second <p> with doc title")?;
