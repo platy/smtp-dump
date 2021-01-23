@@ -7,7 +7,6 @@ use mailin::{Handler, MailResult, SessionBuilder};
 use std::{
     collections::VecDeque,
     fs::{create_dir_all, read, read_dir, remove_file, File},
-    io,
     io::{BufRead, BufReader},
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
@@ -18,17 +17,20 @@ use url::Url;
 
 #[derive(Clone)]
 struct MailHandler {
+    peer_addr: SocketAddr,
     inbox: PathBuf,
 }
 
 impl Handler for MailHandler {
-    fn helo(&mut self, _ip: std::net::IpAddr, _domain: &str) -> mailin::HeloResult {
+    fn helo(&mut self, ip: std::net::IpAddr, domain: &str) -> mailin::HeloResult {
+        println!("{}: HELO {} {}", self.peer_addr, ip, domain);
         mailin::HeloResult::Ok
     }
 
     fn mail(&mut self, ip: std::net::IpAddr, domain: &str, from: &str) -> mailin::MailResult {
-        if !from.contains("gov.uk") {
-            println!("{}({}) tried to send some junk, purporting to be {}", domain, ip, from);
+        let from_match = dotenv::var("FROM_FILTER").ok().map(|from_filter| from.contains(&from_filter));
+        if from_match == Some(false) {
+            println!("{}: {}({}) tried to send some junk, purporting to be {}", self.peer_addr, domain, ip, from);
             MailResult::NoService
         } else {
             MailResult::Ok
@@ -40,24 +42,27 @@ impl Handler for MailHandler {
     }
 
     fn data(&mut self, _domain: &str, from: &str, _is8bit: bool, to: &[String]) -> mailin::DataResult {
-        match create_file_for_email(&self.inbox, from, to) {
-            Ok(writer) => mailin::DataResult::Ok(Box::new(writer)),
+        let email_path = inbox_path_for_email(&self.inbox, from, to);
+        match create_dir_all(email_path.parent().unwrap()).and_then(|_| File::create(&email_path)) {
+            Ok(file) => {
+                println!("{}: Writing email to {}", self.peer_addr, email_path.to_str().unwrap_or_default());
+                mailin::DataResult::Ok(Box::new(file))
+            },
             Err(err) => {
-                println!("Error mapping email envelope to inbox : {}", err);
+                println!("{}: Error mapping email envelope to inbox : {}", self.peer_addr, err);
                 mailin::DataResult::InternalError
             }
         }
     }
 }
 
-fn create_file_for_email(inbox: &PathBuf, from: &str, to: &[String]) -> io::Result<File> {
-    let file_path = inbox
-        .join(from)
+fn inbox_path_for_email(inbox: &PathBuf, from: &str, to: &[String]) -> PathBuf {
+    let from_domain = from.split('@').nth(1);
+    inbox
+        .join(from_domain.unwrap_or(from))
         .join(to.join(","))
         .join(Utc::now().to_rfc3339_opts(SecondsFormat::AutoSi, true))
-        .with_extension("eml");
-    create_dir_all(file_path.parent().unwrap())?;
-    File::create(file_path)
+        .with_extension("eml")
 }
 
 fn main() -> Result<()> {
@@ -74,7 +79,7 @@ fn main() -> Result<()> {
         }
     });
 
-    let socket = TcpListener::bind("localhost:22122")?;
+    let socket = TcpListener::bind("0.0.0.0:25")?;
     loop {
         let (stream, remote_addr) = socket.accept()?;
         if let Err(err) = receive_updates_on_socket(stream, remote_addr, "inbox") {
@@ -94,7 +99,7 @@ fn process_updates_in_dir(dir: impl AsRef<Path>, repo: impl AsRef<Path>, referen
                 for GovUkChange { url, change, .. } in updates {
                     handle_change(url, &repo, &change, reference)?;
                 }
-                // successfully handled, delete
+                // successfully handled, delete TODO - move instead?
                 remove_file(email.path())?;
             }
         }
@@ -104,29 +109,38 @@ fn process_updates_in_dir(dir: impl AsRef<Path>, repo: impl AsRef<Path>, referen
 
 /// accepts emails from gov.uk and saves them in `inbox/{from}/{to}/{datetime}.eml
 fn receive_updates_on_socket(mut stream: TcpStream, remote_addr: SocketAddr, inbox: impl AsRef<Path>) -> Result<()> {
+    let peer_addr = stream.peer_addr()?;
     let handler = MailHandler {
+        peer_addr,
         inbox: inbox.as_ref().to_path_buf(),
     };
     let mut session = SessionBuilder::new("gitgov").build(remote_addr.ip(), handler);
     session.greeting().write_to(&mut stream)?;
 
     let mut buf_read = BufReader::new(stream.try_clone()?);
-    let mut buf = String::new();
+    let mut command = String::new();
 
     loop {
-        buf.clear();
-        let len = buf_read.read_line(&mut buf)?;
-        let result = session.process(&buf.as_bytes()[..len]);
+        command.clear();
+        let len = buf_read.read_line(&mut command)?;
+        if len == 0 {
+            break;
+        }
+        let result = session.process(&command.as_bytes());
         match result.action {
             mailin::Action::Close => {
+                println!("{}: CLOSE", peer_addr);
                 result.write_to(&mut stream)?;
-                break Ok(());
+                break;
             }
             mailin::Action::UpgradeTls => bail!("TLS requested"),
             mailin::Action::NoReply => continue,
-            mailin::Action::Reply => result.write_to(&mut stream).context("Writing SMTP reply failed")?,
+            mailin::Action::Reply => {
+                result.write_to(&mut stream).context(format!("{}: Writing SMTP reply failed when responding to '{}' with '{:?}'", peer_addr, command, result))?
+            },
         }
     }
+    Ok(())
 }
 
 fn handle_change(url: Url, repo_base: impl AsRef<Path>, message: &str, reference: &str) -> Result<()> {
@@ -199,7 +213,7 @@ mod test {
         let mut mailer = SmtpClient::new(addr, ClientSecurity::None).unwrap().transport();
         mailer.send(email.into()).unwrap();
         assert_eq!(
-            std::fs::read_dir("tests/tmp/inbox/test@gov.uk/brexit@example.org")
+            std::fs::read_dir("tests/tmp/inbox/gov.uk/brexit@example.org")
                 .unwrap()
                 .count(),
             1
