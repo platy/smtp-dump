@@ -12,8 +12,8 @@ pub fn retrieve_doc(url: Url) -> Result<Doc> {
     // TODO return the doc and the urls of attachments, probably remove async, I can just use a thread pool and worker queue
     println!("retrieving url : {}", &url);
     let response = get(&url.as_str()).call();
-    if let Some(_err) = response.synthetic_error() {
-        bail!("Error retrieving");
+    if let Some(err) = response.synthetic_error() {
+        bail!("Error retrieving : {}", err);
     }
 
     if response.content_type() == "text/html" {

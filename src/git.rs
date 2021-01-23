@@ -1,7 +1,7 @@
 //! Helpers for git
 
 use anyhow::{format_err, Context, Result};
-use git2::{Commit, Oid, Reference, Repository, Signature, Tree, TreeBuilder};
+use git2::{Commit, Oid, Repository, Signature, Tree, TreeBuilder};
 
 pub struct CommitBuilder<'repo> {
     repo: &'repo Repository,
@@ -67,11 +67,24 @@ fn write_to_path_in_tree(
     if let Some(rest) = it.next() {
         // make a tree node
         let child_tree = if let Some(child_entry) = tree_builder.get(base)? {
-            let child_tree = child_entry
-                .to_object(repo)?
-                .into_tree()
-                .map_err(|_| format_err!("file blocking tree creation at {}", path))?;
-            Some(child_tree)
+            let child_tree = child_entry.to_object(repo)?.into_tree();
+            // handle the case where the tree that we want is a blob, we'll just add a symbol to the end of the name, we use "|" when a tree's name was blocked by a blob and "-" when a blobs name was blocked by a tree
+            match child_tree {
+                Ok(child_tree) => Some(child_tree),
+                Err(_) => {
+                    println!("Malformed a tree name to avoid collsion with a blob {}", path);
+                    if let Some(malformed_entry) = tree_builder.get(format!("{}|", base))? {
+                        Some(
+                            malformed_entry
+                                .to_object(repo)?
+                                .into_tree()
+                                .map_err(|_| format_err!("file blocking tree creation x 2 as {}", path))?,
+                        )
+                    } else {
+                        None
+                    }
+                }
+            }
         } else {
             None
         };
@@ -83,11 +96,4 @@ fn write_to_path_in_tree(
         tree_builder.insert(base, oid, filemode)?;
     }
     Ok(())
-}
-
-fn find_optional_reference<'r>(repo: &'r Repository, name: &str) -> Result<Option<Reference<'r>>, git2::Error> {
-    match repo.find_reference(name).map(Some) {
-        Err(e) if e.code() == git2::ErrorCode::NotFound => Ok(None),
-        r => r,
-    }
 }

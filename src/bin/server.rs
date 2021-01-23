@@ -117,17 +117,20 @@ fn main() -> Result<()> {
     dotenv()?;
     const EMAILS_FROM_GOVUK_PATH: &str = "inbox/mail.notifications.service.gov.uk";
     const ARCHIVE_DIR: &str = "outbox";
-    let repo_path = std::env::var("REPO")?;
-    let reference = std::env::var("REF")?;
+    let repo_path = dotenv::var("REPO")?;
+    let reference = dotenv::var("REF")?;
     create_dir_all(EMAILS_FROM_GOVUK_PATH).context(format!("Error trying to create dir {}", EMAILS_FROM_GOVUK_PATH))?;
     create_dir_all(ARCHIVE_DIR).context(format!("Error trying to create dir {}", ARCHIVE_DIR))?;
-    thread::spawn(move || {
-        loop {
-            process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, ARCHIVE_DIR, &repo_path, &reference)
-                .expect("the processing fails, the repo may be unclean");
-            yield_now();
-        }
-    });
+
+    if dotenv::var("DISABLE_PROCESS_UPDATES").is_err() {
+        thread::spawn(move || {
+            loop {
+                process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, ARCHIVE_DIR, &repo_path, &reference)
+                    .expect("the processing fails, the repo may be unclean");
+                yield_now();
+            }
+        });
+    }
 
     let socket = TcpListener::bind("0.0.0.0:25")?;
     loop {
@@ -169,8 +172,8 @@ fn process_email_update_file(
     let updates = GovUkChange::from_eml(&String::from_utf8(data)?)?;
     let repo = Repository::open(repo_base)?;
     let mut parent = Some(repo.find_reference(reference)?.peel_to_commit()?);
-    for GovUkChange { url, change, .. } in updates {
-        parent = Some(handle_change(url, &repo, &change, parent)?);
+    for change in updates {
+        parent = Some(handle_change(change, &repo, parent)?);
     }
     // successfully handled, 'commit' the new commits by updating the reference and then move email to outbox
     if let Some(commit) = parent {
@@ -189,9 +192,12 @@ fn process_email_update_file(
 }
 
 fn handle_change<'repo>(
-    url: Url,
+    GovUkChange {
+        url,
+        change,
+        updated_at,
+    }: GovUkChange,
     repo: &'repo Repository,
-    message: &str,
     parent: Option<Commit<'repo>>,
 ) -> Result<Commit<'repo>> {
     let mut commit_builder = CommitBuilder::new(&repo, parent)?;
@@ -202,9 +208,10 @@ fn handle_change<'repo>(
         commit_builder.add_to_tree(path.to_str().unwrap(), oid, 0o100644)
     })?;
 
+    let message = format!("{}: {} [Category]", updated_at, change);
     let govuk_sig = Signature::now("Gov.uk", "info@gov.uk")?;
     let gitgov_sig = Signature::now("Gitgov", "gitgov@njk.onl")?;
-    Ok(commit_builder.commit(&govuk_sig, &gitgov_sig, message)?)
+    Ok(commit_builder.commit(&govuk_sig, &gitgov_sig, &message)?)
 }
 
 fn fetch_change(url: Url, mut write_out: impl FnMut(PathBuf, &[u8]) -> Result<()>) -> Result<()> {
@@ -232,7 +239,7 @@ mod test {
     use crate::handle_change;
     use anyhow::Result;
     use git2::{Repository, Signature};
-    use gitgov_rs::git::CommitBuilder;
+    use gitgov_rs::{email_update::GovUkChange, git::CommitBuilder};
     use lettre::{ClientSecurity, SmtpClient, Transport};
     use lettre_email::EmailBuilder;
     use std::{net::TcpListener, path::Path};
@@ -270,7 +277,6 @@ mod test {
     #[test]
     fn test_obtain_changes() -> Result<()> {
         const REPO_DIR: &str = "tests/tmp/repo";
-        const GIT_REF: &str = "refs/heads/main";
         let _ = std::fs::remove_dir_all(REPO_DIR);
         let repo = Repository::init_bare(REPO_DIR)?;
         let test_sig = Signature::now("name", "email")?;
@@ -279,13 +285,16 @@ mod test {
         // let tree = repo.find_tree(oid)?;
         // repo.commit(Some(GIT_REF), &test_sig, &test_sig, "initial commit", &tree, &[])?;
         let commit = handle_change(
-            "https://www.gov.uk/government/consultations/bus-services-act-2017-bus-open-data".parse()?,
+            GovUkChange {
+                url: "https://www.gov.uk/government/consultations/bus-services-act-2017-bus-open-data".parse()?,
+                change: "testing the stuff".to_owned(),
+                updated_at: "some time".to_owned(),
+            },
             &repo,
-            "testing the stuff",
             None,
         )?;
 
-        assert_eq!(commit.message(), Some("testing the stuff"));
+        assert_eq!(commit.message(), Some("some time: testing the stuff [Category]"));
         assert_eq!(
             commit
                 .tree()?
