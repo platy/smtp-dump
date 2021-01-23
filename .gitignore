@@ -1,3 +1,5 @@
 /target
 /inbox
 /tests/tmp
+/logs
+/outbox

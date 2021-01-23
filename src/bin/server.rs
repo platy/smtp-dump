@@ -28,6 +28,7 @@ impl Handler for MailHandler {
     }
 
     fn mail(&mut self, ip: std::net::IpAddr, domain: &str, from: &str) -> mailin::MailResult {
+        println!("{}: MAIL {}", self.peer_addr, from);
         let from_match = dotenv::var("FROM_FILTER")
             .ok()
             .map(|from_filter| from.contains(&from_filter));
@@ -42,7 +43,8 @@ impl Handler for MailHandler {
         }
     }
 
-    fn rcpt(&mut self, _to: &str) -> mailin::RcptResult {
+    fn rcpt(&mut self, to: &str) -> mailin::RcptResult {
+        println!("{}: RCPT {}", self.peer_addr, to);
         mailin::RcptResult::Ok
     }
 
