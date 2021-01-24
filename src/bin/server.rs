@@ -11,7 +11,7 @@ use std::{
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
     thread,
-    thread::yield_now,
+    time,
 };
 use url::Url;
 
@@ -133,7 +133,7 @@ fn main() -> Result<()> {
             loop {
                 process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, ARCHIVE_DIR, &repo_path, &reference)
                     .expect("the processing fails, the repo may be unclean");
-                yield_now();
+                thread::sleep(time::Duration::from_secs(1));
             }
         });
     }
@@ -205,6 +205,7 @@ fn handle_change<'repo>(
         url,
         change,
         updated_at,
+        category,
     }: &GovUkChange,
     repo: &'repo Repository,
     parent: Option<Commit<'repo>>,
@@ -217,7 +218,7 @@ fn handle_change<'repo>(
         commit_builder.add_to_tree(path.to_str().unwrap(), oid, 0o100644)
     })?;
 
-    let message = format!("{}: {} [Category]", updated_at, change);
+    let message = format!("{}: {}{}", updated_at, change, category.as_ref().map(|c| format!(" [{}]", c)).unwrap_or_default());
     let govuk_sig = Signature::now("Gov.uk", "info@gov.uk")?;
     let gitgov_sig = Signature::now("Gitgov", "gitgov@njk.onl")?;
     Ok(commit_builder.commit(&govuk_sig, &gitgov_sig, &message)?)
@@ -298,12 +299,13 @@ mod test {
                 url: "https://www.gov.uk/government/consultations/bus-services-act-2017-bus-open-data".parse()?,
                 change: "testing the stuff".to_owned(),
                 updated_at: "some time".to_owned(),
+                category: Some("Test Category".to_owned())
             },
             &repo,
             None,
         )?;
 
-        assert_eq!(commit.message(), Some("some time: testing the stuff [Category]"));
+        assert_eq!(commit.message(), Some("some time: testing the stuff [Test Category]"));
         assert_eq!(
             commit
                 .tree()?

@@ -1,0 +1,311 @@
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=nxtbmcnibyvdpgybfefagukl3mg67kiw; d=notifications.service.gov.uk;
+	t=1611397753;
+	h=From:Reply-To:To:Subject:MIME-Version:Content-Type:Message-ID:Date;
+	bh=7xeqLLVhUOKDxRY4w8pYXaA4XftYto5Am98i2bTMo3I=;
+	b=jjdMK+PWVlmFWqWXLweyifvXm6UMq+rIQZ8HfYJlz9Hrn3HAhlRvXEhg3IHpchHd
+	Cj5b9emL7KOK2bMq44PCzCIdnId3jt9YM5Wc97p28As+xd/L3m2nNLIokQFLccYOZxe
+	PO3Z0f2f98cmxI+yixwgBcdX5TIt7AnYBAtyoIUI=
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=shh3fegwg5fppqsuzphvschd53n6ihuv; d=amazonses.com; t=1611397753;
+	h=From:Reply-To:To:Subject:MIME-Version:Content-Type:Message-ID:Date:Feedback-ID;
+	bh=7xeqLLVhUOKDxRY4w8pYXaA4XftYto5Am98i2bTMo3I=;
+	b=ic99pGnfLUpbbN6NpDur88d9W7vUaH33HrqgC5qyDTLiZ8Ta9R05bcwQwFxAqktw
+	7zDX2Y0gIokphrO7TEXJ1pOVI7DjFu1/HlIG7MbVicHCd+PZp5Hz1IEYDaSp+DmVcW0
+	RQgJv8713VupOKMv2nehS3uiNzjRXyuiRUlFClNM=
+From: "GOV.UK Email" <gov.uk.email@notifications.service.gov.uk>
+Reply-To: govuk-email-support@digital.cabinet-office.gov.uk
+To: news@s3.njk.onl
+Subject: Update from GOV.UK for: UK to host G7 Summit in Cornwall
+MIME-Version: 1.0
+Content-Type: multipart/alternative; 
+	boundary="----=_Part_18005022_120221414.1611397753048"
+Message-ID: <010201772eca68d6-9d076261-a2a4-4d58-8e75-6bd720b0d896-000000@eu-west-1.amazonses.com>
+Date: Sat, 23 Jan 2021 10:29:13 +0000
+X-SES-Outgoing: 2021.01.23-23.251.239.67
+Feedback-ID: 1.eu-west-1.M09i2swFYaG/Dh70O3yzfH0X81UVFLYEnO9w5Z7AaS4=:AmazonSES
+
+------=_Part_18005022_120221414.1611397753048
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Update from GOV.=E2=80=8BUK for:
+
+
+News and communications
+-----------------------------------------------------------------
+
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+
+
+UK to host G7 Summit in Cornwall: https://www.gov.uk/government/news/uk-to-=
+host-g7-summit-in-cornwall?utm_medium=3Demail&utm_campaign=3Dgovuk-notifica=
+tions&utm_source=3D4f1392b8-4b4b-49a9-822b-51cd6643ac80&utm_content=3Dimmed=
+iately
+-----------------------------------------------------------------
+
+Page summary:
+PM will use the UK=E2=80=99s G7 Presidency to unite leading democracies to =
+help the world build back better from coronavirus and create a greener, mor=
+e prosperous future.
+
+Change made:
+First published.
+
+Time updated:
+10:29am, 23 January 2021
+
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+
+
+Why am I getting this email?
+-----------------------------------------------------------------
+
+You asked GOV.=E2=80=8BUK to send you an email each time we add or update a=
+ page about:
+
+News and communications
+
+Unsubscribe: https://www.gov.uk/email/unsubscribe/b3107f9b-cc60-418d-9785-b=
+35df21c1f03?utm_medium=3Demail&utm_campaign=3Dgovuk-notifications&utm_sourc=
+e=3Dnews-and-communications&utm_content=3Dimmediately&token=3Dyi1hjgk0i9dNt=
+fWyGinxCjX9P4Wnb9ku1%2BC3Kg2z5hdb31RDTHjeyAJL3rotwZF9GWEVB1vQA1kso6xqOTiy8n=
+4ax5JN0PUCra6fyMkpf1lt3fe3qtwxO5bN9ApqSiyce60C4HWEiKcd--jSmTf%2BFZEvfwt0RV-=
+-MqghBP2ZgrumVBrcm3yjGA%3D%3D
+
+Manage your email preferences: https://www.gov.uk/email/manage/authenticate=
+?utm_medium=3Demail&utm_campaign=3Dgovuk-notifications&utm_source=3Dnews-an=
+d-communications&utm_content=3Dimmediately&address=3Dnews%40s3.njk.onl
+
+------=_Part_18005022_120221414.1611397753048
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org=
+/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns=3D"http://www.w3.org/1999/xhtml" xml:lang=3D"en" lang=3D"en">
+
+<head>
+  <meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dutf-8" =
+/>
+  <meta content=3D"telephone=3Dno" name=3D"format-detection" /> <!-- need t=
+o add formatting for real phone numbers -->
+  <meta name=3D"viewport" content=3D"width=3Ddevice-width" />
+  <title>Update from GOV.UK for: UK to host G7 Summit in Cornwall</title>
+
+  <style type=3D"text/css">
+    @media only screen and (min-device-width: 581px) {
+      .content {
+        width: 580px !important;
+      }
+    }
+    body { margin:0 !important; }
+    div[style*=3D"margin: 16px 0"] { margin:0 !important; }
+  </style>
+
+  <!--[if gte mso 9]>
+    <style type=3D"text/css">
+      li {
+        margin-left: 4px !important;
+      }
+      table {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+    </style>
+  <![endif]-->
+
+</head>
+
+<body style=3D"font-family: Helvetica, Arial, sans-serif;font-size: 16px;ma=
+rgin: 0;color:#0b0c0c;">
+
+<span style=3D"display: none;font-size: 1px;color: #fff; max-height: 0;">Up=
+date from GOV.=E2=80=8BUK for: News and communications UK to host G7 Summit=
+ in Cornwall Page summary: PM will use the UK=E2=80=99s G7 Presidency to un=
+ite leading democracies to help the world build back better from coronaviru=
+s and create a greener, more prosperous futur=E2=80=A6</span>
+
+  <table role=3D"presentation" width=3D"100%" style=3D"border-collapse: col=
+lapse;min-width: 100%;width: 100% !important;" cellpadding=3D"0" cellspacin=
+g=3D"0" border=3D"0">
+    <tr>
+      <td width=3D"100%" height=3D"53" bgcolor=3D"#0b0c0c">
+        <!--[if (gte mso 9)|(IE)]>
+          <table role=3D"presentation" width=3D"580" align=3D"center" cellp=
+adding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"border-collapse: colla=
+pse;width: 580px;">
+            <tr>
+              <td>
+        <![endif]-->
+        <table role=3D"presentation" width=3D"100%" style=3D"border-collaps=
+e: collapse;max-width: 580px;" cellpadding=3D"0" cellspacing=3D"0" border=
+=3D"0" align=3D"center">
+          <tr>
+            <td width=3D"70" bgcolor=3D"#0b0c0c" valign=3D"middle">
+              <a href=3D"https://www.gov.uk" title=3D"Go to the GOV.UK home=
+page" style=3D"text-decoration: none;">
+                <table role=3D"presentation" cellpadding=3D"0" cellspacing=
+=3D"0" border=3D"0" style=3D"border-collapse: collapse;">
+                  <tr>
+                    <td style=3D"padding-left: 10px">
+                      <img
+                        src=3D"https://static.notifications.service.gov.uk/=
+images/gov.uk_logotype_crown.png"
+                        alt=3D""
+                        height=3D"32"
+                        border=3D"0"
+                        style=3D"Margin-top: 4px;"
+                      />
+                    </td>
+                    <td style=3D"font-size: 28px; line-height: 1.315789474;=
+ Margin-top: 4px; padding-left: 10px;">
+                      <span style=3D"
+                        font-family: Helvetica, Arial, sans-serif;
+                        font-weight: 700;
+                        color: #ffffff;
+                        text-decoration: none;
+                        vertical-align:top;
+                        display: inline-block;
+                          ">GOV.UK</span>
+                    </td>
+                  </tr>
+                </table>
+              </a>
+            </td>
+          </tr>
+        </table>
+        <!--[if (gte mso 9)|(IE)]>
+              </td>
+            </tr>
+          </table>
+        <![endif]-->
+      </td>
+    </tr>
+  </table>
+  <table
+      role=3D"presentation"
+      class=3D"content"
+      align=3D"center"
+      cellpadding=3D"0"
+      cellspacing=3D"0"
+      border=3D"0"
+      style=3D"border-collapse: collapse;max-width: 580px; width: 100% !imp=
+ortant;"
+      width=3D"100%"
+  >
+    <tr>
+      <td width=3D"10" height=3D"10" valign=3D"middle"></td>
+      <td>
+        <!--[if (gte mso 9)|(IE)]>
+          <table role=3D"presentation" width=3D"560" align=3D"center" cellp=
+adding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"border-collapse: colla=
+pse;width: 560px;">
+            <tr>
+              <td height=3D"10">
+        <![endif]-->
+                <table role=3D"presentation" width=3D"100%" cellpadding=3D"=
+0" cellspacing=3D"0" border=3D"0" style=3D"border-collapse: collapse;">
+                  <tr>
+                    <td bgcolor=3D"#1D70B8" width=3D"100%" height=3D"10"></=
+td>
+                  </tr>
+                </table>
+        <!--[if (gte mso 9)|(IE)]>
+              </td>
+            </tr>
+          </table>
+        <![endif]-->
+      </td>
+      <td width=3D"10" valign=3D"middle" height=3D"10"></td>
+    </tr>
+  </table>
+
+
+
+  <table
+      role=3D"presentation"
+      class=3D"content"
+      align=3D"center"
+      cellpadding=3D"0"
+      cellspacing=3D"0"
+      border=3D"0"
+      style=3D"border-collapse: collapse;max-width: 580px; width: 100% !imp=
+ortant;"
+      width=3D"100%"
+  >
+    <tr>
+      <td height=3D"30"><br /></td>
+    </tr>
+    <tr>
+      <td width=3D"10" valign=3D"middle"><br /></td>
+      <td style=3D"font-family: Helvetica, Arial, sans-serif; font-size: 19=
+px; line-height: 1.315789474; max-width: 560px;">
+        <!--[if (gte mso 9)|(IE)]>
+          <table role=3D"presentation" width=3D"560" align=3D"center" cellp=
+adding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"border-collapse: colla=
+pse;width: 560px;">
+            <tr>
+              <td style=3D"font-family: Helvetica, Arial, sans-serif; font-=
+size: 19px; line-height: 1.315789474;">
+        <![endif]-->
+            <p style=3D"Margin: 0 0 20px 0; font-size: 19px; line-height: 2=
+5px; color: #0B0C0C;">Update from GOV.=E2=80=8BUK for:</p><h2 style=3D"Marg=
+in: 0 0 20px 0; padding: 0; font-size: 27px; line-height: 35px; font-weight=
+: bold; color: #0B0C0C;">News and communications</h2><hr style=3D"border: 0=
+; height: 1px; background: #B1B4B6; Margin: 30px 0 30px 0;"><h2 style=3D"Ma=
+rgin: 0 0 20px 0; padding: 0; font-size: 27px; line-height: 35px; font-weig=
+ht: bold; color: #0B0C0C;"><a style=3D"word-wrap: break-word; color: #1D70B=
+8;" href=3D"https://www.gov.uk/government/news/uk-to-host-g7-summit-in-corn=
+wall?utm_medium=3Demail&amp;utm_campaign=3Dgovuk-notifications&amp;utm_sour=
+ce=3D4f1392b8-4b4b-49a9-822b-51cd6643ac80&amp;utm_content=3Dimmediately">UK=
+ to host G7 Summit in Cornwall</a></h2><p style=3D"Margin: 0 0 20px 0; font=
+-size: 19px; line-height: 25px; color: #0B0C0C;">Page summary:<br />PM will=
+ use the UK=E2=80=99s G7 Presidency to unite leading democracies to help th=
+e world build back better from coronavirus and create a greener, more prosp=
+erous future.</p><p style=3D"Margin: 0 0 20px 0; font-size: 19px; line-heig=
+ht: 25px; color: #0B0C0C;">Change made:<br />First published.</p><p style=
+=3D"Margin: 0 0 20px 0; font-size: 19px; line-height: 25px; color: #0B0C0C;=
+">Time updated:<br />10:29am, 23 January 2021</p><hr style=3D"border: 0; he=
+ight: 1px; background: #B1B4B6; Margin: 30px 0 30px 0;"><h2 style=3D"Margin=
+: 0 0 20px 0; padding: 0; font-size: 27px; line-height: 35px; font-weight: =
+bold; color: #0B0C0C;">Why am I getting this email?</h2><p style=3D"Margin:=
+ 0 0 20px 0; font-size: 19px; line-height: 25px; color: #0B0C0C;">You asked=
+ GOV.=E2=80=8BUK to send you an email each time we add or update a page abo=
+ut:</p><p style=3D"Margin: 0 0 20px 0; font-size: 19px; line-height: 25px; =
+color: #0B0C0C;">News and communications</p><p style=3D"Margin: 0 0 20px 0;=
+ font-size: 19px; line-height: 25px; color: #0B0C0C;"><a style=3D"word-wrap=
+: break-word; color: #1D70B8;" href=3D"https://www.gov.uk/email/unsubscribe=
+/b3107f9b-cc60-418d-9785-b35df21c1f03?utm_medium=3Demail&amp;utm_campaign=
+=3Dgovuk-notifications&amp;utm_source=3Dnews-and-communications&amp;utm_con=
+tent=3Dimmediately&amp;token=3Dyi1hjgk0i9dNtfWyGinxCjX9P4Wnb9ku1%2BC3Kg2z5h=
+db31RDTHjeyAJL3rotwZF9GWEVB1vQA1kso6xqOTiy8n4ax5JN0PUCra6fyMkpf1lt3fe3qtwxO=
+5bN9ApqSiyce60C4HWEiKcd--jSmTf%2BFZEvfwt0RV--MqghBP2ZgrumVBrcm3yjGA%3D%3D">=
+Unsubscribe</a></p><p style=3D"Margin: 0 0 20px 0; font-size: 19px; line-he=
+ight: 25px; color: #0B0C0C;"><a style=3D"word-wrap: break-word; color: #1D7=
+0B8;" href=3D"https://www.gov.uk/email/manage/authenticate?utm_medium=3Dema=
+il&amp;utm_campaign=3Dgovuk-notifications&amp;utm_source=3Dnews-and-communi=
+cations&amp;utm_content=3Dimmediately&amp;address=3Dnews%40s3.njk.onl">Mana=
+ge your email preferences</a></p>
+        <!--[if (gte mso 9)|(IE)]>
+              </td>
+            </tr>
+          </table>
+        <![endif]-->
+      </td>
+      <td width=3D"10" valign=3D"middle"><br /></td>
+    </tr>
+    <tr>
+      <td height=3D"30"><br /></td>
+    </tr>
+  </table>
+
+</body>
+</html>
+
+------=_Part_18005022_120221414.1611397753048--

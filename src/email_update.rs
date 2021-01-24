@@ -7,6 +7,7 @@ pub struct GovUkChange {
     pub change: String,
     pub updated_at: String,
     pub url: Url,
+    pub category: Option<String>,
 }
 
 impl GovUkChange {
@@ -22,7 +23,9 @@ impl GovUkChange {
         };
         match email_title.as_ref() {
             "Update on GOV.\u{200B}UK." => parse_single(ps),
+            "Update from GOV.\u{200b}UK for:" => parse_bulk(html),
             "Daily update from GOV.\u{200b}UK for:" => parse_bulk(html),
+            "This link will stop working after 7 days." | "You’ll get an email from GOV.\u{200b}UK each time we add or update a page about:" => Ok(vec![]),
             title => bail!("Unexpected email title {:?}", title),
         }
     }
@@ -52,6 +55,7 @@ impl GovUkChange {
             change,
             url,
             updated_at,
+            category: None,
         })
     }
 }
@@ -59,18 +63,14 @@ impl GovUkChange {
 fn parse_bulk(html: html::Html) -> Result<Vec<GovUkChange>> {
     let h2 = Selector::parse("h2").unwrap();
     let mut h2s = html.select(&h2);
-    let section_name = {
+    let category = {
         let h2 = h2s.next().context("Expected section heading")?;
         h2.inner_html()
     };
-    ensure!(
-        section_name == "Coronavirus (COVID-19)",
-        "Unexpected section title: {:?}",
-        section_name
-    );
     let mut updates = vec![];
     for h2 in h2s {
-        if let Some(update) = parse_bulk_update(h2).context("Something missing in part of a bulk update")? {
+        if let Some(mut update) = parse_bulk_update(h2).context("Something missing in part of a bulk update")? {
+            update.category = Some(category.clone());
             updates.push(update);
         }
     }
@@ -137,6 +137,23 @@ fn test_single_email_parse() {
             url: "https://www.gov.uk/government/publications/germany-list-of-medical-practitionersfacilities"
                 .parse()
                 .unwrap(),
+                category: None,
+        }]
+    )
+}
+
+#[test]
+fn test_single_2021_email_parse() {
+    let updates = GovUkChange::from_eml(include_str!("../tests/emails/GOV.UK single update 2021.eml")).unwrap();
+    assert_eq!(
+        updates,
+        vec![GovUkChange {
+            change: "First published.".to_owned(),
+            updated_at: "10:29am, 23 January 2021".to_owned(),
+            url: "https://www.gov.uk/government/news/uk-to-host-g7-summit-in-cornwall"
+                .parse()
+                .unwrap(),
+                category: Some("News and communications".to_owned()),
         }]
     )
 }
@@ -150,6 +167,7 @@ fn test_daily_email_parse() {
             change: "Under ‘What care homes and other social care settings must do during an outbreak’ and ‘Repeat testing’, updated the length of time that staff or residents who have been diagnosed with COVID-19 should not be included in testing – to 90 days after either their initial onset of symptoms or their positive test result (if they were asymptomatic when tested).".to_owned(),
             updated_at: "8:06am, 22 January 2021".to_owned(),
             url: "https://www.gov.uk/guidance/overview-of-adult-social-care-guidance-on-coronavirus-covid-19".parse().unwrap(),
+            category: Some("Coronavirus (COVID-19)".to_owned()),
         },
         updates[0]
     );
@@ -169,6 +187,7 @@ fn test_html_parse() {
             url: "https://www.gov.uk/guidance/export-live-animals-special-rules"
                 .parse()
                 .unwrap(),
+            category: None,
         }]
     )
 }
