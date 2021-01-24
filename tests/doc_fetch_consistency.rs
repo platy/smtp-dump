@@ -9,7 +9,7 @@ use pretty_assertions::assert_eq;
 #[test]
 fn fetch_and_strip_doc() {
     let doc = retrieve_doc(
-        "https://www.gov.uk/change-name-deed-poll/make-an-adult-deed-poll"
+        &"https://www.gov.uk/change-name-deed-poll/make-an-adult-deed-poll"
             .parse()
             .unwrap(),
     )
@@ -28,7 +28,7 @@ fn fetch_and_strip_doc() {
 #[test]
 fn fetch_and_strip_doc_with_attachments() {
     let doc = retrieve_doc(
-        "https://www.gov.uk/government/consultations/bus-services-act-2017-bus-open-data"
+        &"https://www.gov.uk/government/consultations/bus-services-act-2017-bus-open-data"
             .parse()
             .unwrap(),
     )
@@ -64,7 +64,7 @@ fn fetch_and_strip_doc_with_attachments() {
 #[test]
 fn fetch_file() {
     let doc = retrieve_doc(
-        "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/722576/bus-open-data-case-for-change.pdf".parse().unwrap(),
+        &"https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/722576/bus-open-data-case-for-change.pdf".parse().unwrap(),
     )
     .unwrap();
     assert_file(

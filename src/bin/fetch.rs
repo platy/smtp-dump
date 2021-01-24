@@ -6,12 +6,13 @@ use std::{
     io::Write,
     path::Path,
 };
+use url::Url;
 
 use gitgov_rs::retrieve_doc;
 
 fn main() -> Result<()> {
     let args: Vec<_> = args_os().collect();
-    let url = args
+    let url: Url = args
         .get(1)
         .expect("Url to fetch should be first argument")
         .to_str()
@@ -23,11 +24,11 @@ fn main() -> Result<()> {
         .to_str()
         .unwrap();
 
-    let mut urls = VecDeque::new();
+    let mut urls: VecDeque<Url> = VecDeque::new();
     urls.push_back(url);
 
     while let Some(url) = urls.pop_front() {
-        let doc = retrieve_doc(url)?;
+        let doc = retrieve_doc(&url)?;
         urls.extend(doc.content.attachments().unwrap_or_default().iter().cloned());
 
         let mut path = Path::new(&dir).join(doc.url.path().strip_prefix("/").unwrap());

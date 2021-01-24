@@ -10,11 +10,8 @@
 - [x] make commits
 - [ ] server integration test
 - [x] remove unwraps
-- [ ] deploy server running alongside existing one
+- [x] deploy server running alongside existing one
 - [x] don't update commit ref until the whole email has been processed
-- [ ] fix the smtp encoding leftovers in the commit message
-- [ ] smtp decoding error also affect the url : https://www.gov..uk/government/publications/phe-analysis-of-transmissibility-based-on-genomics-15-december-2020?utm_medium=email&utm_campaign=govuk-notifications&utm_source=7a5fbaa3-df13-4ea8-a6e0-73f1c8637788&utm_content=daily
-- [ ] probably remove that tracking info too
 - [ ] add category tags
 - [ ] correct the commit message
 - [x] "file blocking tree creation"

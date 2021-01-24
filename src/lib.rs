@@ -8,9 +8,9 @@ pub mod email_update;
 pub use doc::{Doc, DocContent};
 pub mod git;
 
-pub fn retrieve_doc(url: Url) -> Result<Doc> {
+pub fn retrieve_doc(url: &Url) -> Result<Doc> {
     // TODO return the doc and the urls of attachments, probably remove async, I can just use a thread pool and worker queue
-    println!("retrieving url : {}", &url);
+    println!("retrieving url : {}", url);
     let response = get(&url.as_str()).call();
     if let Some(err) = response.synthetic_error() {
         bail!("Error retrieving : {}", err);
@@ -20,7 +20,7 @@ pub fn retrieve_doc(url: Url) -> Result<Doc> {
         let content = response.into_string().with_context(|| url.clone())?;
         let doc = Doc {
             content: DocContent::html(&content, Some(&url))?,
-            url,
+            url: url.to_owned(),
         };
 
         Ok(doc)
@@ -30,7 +30,7 @@ pub fn retrieve_doc(url: Url) -> Result<Doc> {
         copy(&mut reader, &mut buf)
             .map_err(|err| format_err!("Error retrieving attachment : {}, url : {}", &err, &url))?;
         Ok(Doc {
-            url,
+            url: url.to_owned(),
             content: DocContent::Other(buf),
         })
     }

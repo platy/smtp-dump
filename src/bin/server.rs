@@ -92,9 +92,15 @@ fn receive_updates_on_socket(mut stream: TcpStream, remote_addr: SocketAddr, inb
     loop {
         command.clear();
         let len = buf_read.read_line(&mut command)?;
-        if len == 0 {
+        let command = if len == 0 {
             break;
-        }
+        } else if command.starts_with('.') && command != ".\r\n" {
+            // undo dot stuffing
+            println!("Undoing dot stuffing on line {:?}", command);
+            &command[1..]
+        } else {
+            &command[..]
+        };
         let result = session.process(&command.as_bytes());
         match result.action {
             mailin::Action::Close => {
@@ -168,12 +174,12 @@ fn process_email_update_file(
     repo_base: impl AsRef<Path>,
     reference: &str,
 ) -> Result<()> {
-    let data = read(dir_entry.path())?;
-    let updates = GovUkChange::from_eml(&String::from_utf8(data)?)?;
-    let repo = Repository::open(repo_base)?;
+    let data = read(dir_entry.path()).context("Reading email file")?;
+    let updates = GovUkChange::from_eml(&String::from_utf8(data)?).context("Parsing email")?;
+    let repo = Repository::open(repo_base).context("Opening repo")?;
     let mut parent = Some(repo.find_reference(reference)?.peel_to_commit()?);
-    for change in updates {
-        parent = Some(handle_change(change, &repo, parent)?);
+    for change in &updates {
+        parent = Some(handle_change(change, &repo, parent).context(format!("Processing change {:?}", change))?);
     }
     // successfully handled, 'commit' the new commits by updating the reference and then move email to outbox
     if let Some(commit) = parent {
@@ -184,10 +190,13 @@ fn process_email_update_file(
             &format!("Added updates from {:?}", dir_entry.path()),
         )?;
     }
-    rename(
-        dir_entry.path(),
-        out_dir.as_ref().join(to_dir_name).join(dir_entry.file_name()),
-    )?;
+    let done_path = out_dir.as_ref().join(to_dir_name).join(dir_entry.file_name());
+    create_dir_all(done_path.parent().unwrap()).context("Creating outbox dir")?;
+    rename(dir_entry.path(), &done_path).context(format!(
+        "Renaming file {} to {}",
+        dir_entry.path().to_str().unwrap_or_default(),
+        &done_path.to_str().unwrap_or_default()
+    ))?;
     Ok(())
 }
 
@@ -196,7 +205,7 @@ fn handle_change<'repo>(
         url,
         change,
         updated_at,
-    }: GovUkChange,
+    }: &GovUkChange,
     repo: &'repo Repository,
     parent: Option<Commit<'repo>>,
 ) -> Result<Commit<'repo>> {
@@ -214,12 +223,12 @@ fn handle_change<'repo>(
     Ok(commit_builder.commit(&govuk_sig, &gitgov_sig, &message)?)
 }
 
-fn fetch_change(url: Url, mut write_out: impl FnMut(PathBuf, &[u8]) -> Result<()>) -> Result<()> {
+fn fetch_change(url: &Url, mut write_out: impl FnMut(PathBuf, &[u8]) -> Result<()>) -> Result<()> {
     let mut urls = VecDeque::new();
-    urls.push_back(url);
+    urls.push_back(url.to_owned());
 
     while let Some(url) = urls.pop_front() {
-        let doc = retrieve_doc(url)?;
+        let doc = retrieve_doc(&url)?;
         urls.extend(doc.content.attachments().unwrap_or_default().iter().cloned());
 
         let mut path = PathBuf::from(doc.url.path());
@@ -260,7 +269,7 @@ mod test {
             // ... or by an address only
             .from("test@gov.uk")
             .subject("Hi, Hello world")
-            .text("Hello world.")
+            .text(".Hello world.")
             .build()
             .unwrap();
 
@@ -285,7 +294,7 @@ mod test {
         // let tree = repo.find_tree(oid)?;
         // repo.commit(Some(GIT_REF), &test_sig, &test_sig, "initial commit", &tree, &[])?;
         let commit = handle_change(
-            GovUkChange {
+            &GovUkChange {
                 url: "https://www.gov.uk/government/consultations/bus-services-act-2017-bus-open-data".parse()?,
                 change: "testing the stuff".to_owned(),
                 updated_at: "some time".to_owned(),
