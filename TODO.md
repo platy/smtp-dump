@@ -12,10 +12,10 @@
 - [x] remove unwraps
 - [x] deploy server running alongside existing one
 - [x] don't update commit ref until the whole email has been processed
-- [ ] add category tags
-- [ ] correct the commit message
+- [x] add category tags
+- [x] correct the commit message
 - [x] "file blocking tree creation"
-- [ ] add push
+- [x] add push
 - [ ] clean code
 - [ ] replace server
 

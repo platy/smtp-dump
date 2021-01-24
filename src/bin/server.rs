@@ -129,10 +129,15 @@ fn main() -> Result<()> {
     create_dir_all(ARCHIVE_DIR).context(format!("Error trying to create dir {}", ARCHIVE_DIR))?;
 
     if dotenv::var("DISABLE_PROCESS_UPDATES").is_err() {
+        push(&repo_path)?;
         thread::spawn(move || {
             loop {
-                process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, ARCHIVE_DIR, &repo_path, &reference)
+                let count = process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, ARCHIVE_DIR, &repo_path, &reference)
                     .expect("the processing fails, the repo may be unclean");
+                if count > 0 { 
+                    println!("Processed {} update emails, pushing", count);
+                    push(&repo_path).unwrap_or_else(|err| println!("Push failed : {}", err));
+                }
                 thread::sleep(time::Duration::from_secs(1));
             }
         });
@@ -147,12 +152,32 @@ fn main() -> Result<()> {
     }
 }
 
+fn push(repo_base: impl AsRef<Path>) -> Result<()> {
+    let mut remote_callbacks = git2::RemoteCallbacks::new();
+    remote_callbacks.credentials(|_url, username_from_url, _allowed_types| {
+        git2::Cred::ssh_key(
+            username_from_url.unwrap(),
+            None,
+            std::path::Path::new(&format!("{}/.ssh/id_rsa", std::env::var("HOME").unwrap())),
+            None,
+        )
+    });
+    let repo = Repository::open(repo_base).context("Opening repo")?;
+    let mut remote = repo.find_remote("origin")?;
+    remote.push(
+        &["refs/heads/main"],
+        Some(git2::PushOptions::new().remote_callbacks(remote_callbacks)),
+    )?;
+    Ok(())
+}
+
 fn process_updates_in_dir(
     in_dir: impl AsRef<Path>,
     out_dir: impl AsRef<Path>,
     repo: impl AsRef<Path>,
     reference: &str,
-) -> Result<()> {
+) -> Result<u32> {
+    let mut count = 0;
     for to_inbox in read_dir(in_dir)? {
         let to_inbox = to_inbox?;
         if to_inbox.metadata()?.is_dir() {
@@ -161,10 +186,11 @@ fn process_updates_in_dir(
                 process_email_update_file(to_inbox.file_name(), &email, &out_dir, &repo, reference).context(
                     format!("Failed processing {}", email.path().to_str().unwrap_or_default()),
                 )?;
+                count += 1;
             }
         }
     }
-    Ok(())
+    Ok(count)
 }
 
 fn process_email_update_file(
@@ -218,7 +244,12 @@ fn handle_change<'repo>(
         commit_builder.add_to_tree(path.to_str().unwrap(), oid, 0o100644)
     })?;
 
-    let message = format!("{}: {}{}", updated_at, change, category.as_ref().map(|c| format!(" [{}]", c)).unwrap_or_default());
+    let message = format!(
+        "{}: {}{}",
+        updated_at,
+        change,
+        category.as_ref().map(|c| format!(" [{}]", c)).unwrap_or_default()
+    );
     let govuk_sig = Signature::now("Gov.uk", "info@gov.uk")?;
     let gitgov_sig = Signature::now("Gitgov", "gitgov@njk.onl")?;
     Ok(commit_builder.commit(&govuk_sig, &gitgov_sig, &message)?)
@@ -299,7 +330,7 @@ mod test {
                 url: "https://www.gov.uk/government/consultations/bus-services-act-2017-bus-open-data".parse()?,
                 change: "testing the stuff".to_owned(),
                 updated_at: "some time".to_owned(),
-                category: Some("Test Category".to_owned())
+                category: Some("Test Category".to_owned()),
             },
             &repo,
             None,

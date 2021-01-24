@@ -25,7 +25,8 @@ impl GovUkChange {
             "Update on GOV.\u{200B}UK." => parse_single(ps),
             "Update from GOV.\u{200b}UK for:" => parse_bulk(html),
             "Daily update from GOV.\u{200b}UK for:" => parse_bulk(html),
-            "This link will stop working after 7 days." | "You’ll get an email from GOV.\u{200b}UK each time we add or update a page about:" => Ok(vec![]),
+            "This link will stop working after 7 days."
+            | "You’ll get an email from GOV.\u{200b}UK each time we add or update a page about:" => Ok(vec![]),
             title => bail!("Unexpected email title {:?}", title),
         }
     }
@@ -137,7 +138,7 @@ fn test_single_email_parse() {
             url: "https://www.gov.uk/government/publications/germany-list-of-medical-practitionersfacilities"
                 .parse()
                 .unwrap(),
-                category: None,
+            category: None,
         }]
     )
 }
@@ -153,7 +154,7 @@ fn test_single_2021_email_parse() {
             url: "https://www.gov.uk/government/news/uk-to-host-g7-summit-in-cornwall"
                 .parse()
                 .unwrap(),
-                category: Some("News and communications".to_owned()),
+            category: Some("News and communications".to_owned()),
         }]
     )
 }
