@@ -260,6 +260,10 @@ fn fetch_change(url: &Url, mut write_out: impl FnMut(PathBuf, &[u8]) -> Result<(
     urls.push_back(url.to_owned());
 
     while let Some(url) = urls.pop_front() {
+        if url.host_str() != Some("www.gov.uk") {
+            println!("Ignoring link to offsite document : {}", &url);
+            continue;
+        }
         let doc = retrieve_doc(&url)?;
         urls.extend(doc.content.attachments().unwrap_or_default().iter().cloned());
 

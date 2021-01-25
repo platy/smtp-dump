@@ -8,7 +8,6 @@
 - [x] listen for emails
 - [x] save docs
 - [x] make commits
-- [ ] server integration test
 - [x] remove unwraps
 - [x] deploy server running alongside existing one
 - [x] don't update commit ref until the whole email has been processed
@@ -16,8 +15,8 @@
 - [x] correct the commit message
 - [x] "file blocking tree creation"
 - [x] add push
-- [ ] clean code
-- [ ] replace server
+- [x] don't follow links off site
+- [ ] deploy properly
 
 Then db cleanup, including these features
 - read the update info from the document
