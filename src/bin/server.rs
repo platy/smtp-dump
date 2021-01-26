@@ -1,13 +1,14 @@
 use anyhow::{bail, Context, Result};
 use chrono::{SecondsFormat, Utc};
 use dotenv::dotenv;
+use file_lock::FileLock;
 use git2::{Commit, Repository, Signature};
 use gitgov_rs::{email_update::GovUkChange, git::CommitBuilder, retrieve_doc};
 use mailin::{Handler, MailResult, SessionBuilder};
 use std::{
     collections::VecDeque,
-    fs::{create_dir_all, read, read_dir, rename, DirEntry, File},
-    io::{BufRead, BufReader},
+    fs,
+    io::{BufRead, BufReader, Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
     thread,
@@ -50,20 +51,39 @@ impl Handler for MailHandler {
 
     fn data(&mut self, _domain: &str, from: &str, _is8bit: bool, to: &[String]) -> mailin::DataResult {
         let email_path = inbox_path_for_email(&self.inbox, from, to);
-        match create_dir_all(email_path.parent().unwrap()).and_then(|_| File::create(&email_path)) {
-            Ok(file) => {
+        match EmailWrite::create(&email_path) {
+            Ok(writer) => {
                 println!(
                     "{}: Writing email to {}",
                     self.peer_addr,
                     email_path.to_str().unwrap_or_default()
                 );
-                mailin::DataResult::Ok(Box::new(file))
+                mailin::DataResult::Ok(Box::new(writer))
             }
             Err(err) => {
                 println!("{}: Error mapping email envelope to inbox : {}", self.peer_addr, err);
                 mailin::DataResult::InternalError
             }
         }
+    }
+}
+
+struct EmailWrite(FileLock);
+
+impl EmailWrite {
+    fn create(path: &PathBuf) -> Result<Self> {
+        fs::create_dir_all(path.parent().unwrap())?;
+        Ok(EmailWrite(FileLock::lock(&path.to_str().unwrap(), false, true)?))
+    }
+}
+
+impl Write for EmailWrite {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.file.write(buf)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.0.file.flush()
     }
 }
 
@@ -125,8 +145,9 @@ fn main() -> Result<()> {
     const ARCHIVE_DIR: &str = "outbox";
     let repo_path = dotenv::var("REPO")?;
     let reference = dotenv::var("REF")?;
-    create_dir_all(EMAILS_FROM_GOVUK_PATH).context(format!("Error trying to create dir {}", EMAILS_FROM_GOVUK_PATH))?;
-    create_dir_all(ARCHIVE_DIR).context(format!("Error trying to create dir {}", ARCHIVE_DIR))?;
+    fs::create_dir_all(EMAILS_FROM_GOVUK_PATH)
+        .context(format!("Error trying to create dir {}", EMAILS_FROM_GOVUK_PATH))?;
+    fs::create_dir_all(ARCHIVE_DIR).context(format!("Error trying to create dir {}", ARCHIVE_DIR))?;
 
     if dotenv::var("DISABLE_PROCESS_UPDATES").is_err() {
         push(&repo_path)?;
@@ -134,7 +155,7 @@ fn main() -> Result<()> {
             loop {
                 let count = process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, ARCHIVE_DIR, &repo_path, &reference)
                     .expect("the processing fails, the repo may be unclean");
-                if count > 0 { 
+                if count > 0 {
                     println!("Processed {} update emails, pushing", count);
                     push(&repo_path).unwrap_or_else(|err| println!("Push failed : {}", err));
                 }
@@ -178,10 +199,10 @@ fn process_updates_in_dir(
     reference: &str,
 ) -> Result<u32> {
     let mut count = 0;
-    for to_inbox in read_dir(in_dir)? {
+    for to_inbox in fs::read_dir(in_dir)? {
         let to_inbox = to_inbox?;
         if to_inbox.metadata()?.is_dir() {
-            for email in read_dir(to_inbox.path())? {
+            for email in fs::read_dir(to_inbox.path())? {
                 let email = email?;
                 process_email_update_file(to_inbox.file_name(), &email, &out_dir, &repo, reference).context(
                     format!("Failed processing {}", email.path().to_str().unwrap_or_default()),
@@ -195,12 +216,18 @@ fn process_updates_in_dir(
 
 fn process_email_update_file(
     to_dir_name: impl AsRef<Path>,
-    dir_entry: &DirEntry,
+    dir_entry: &fs::DirEntry,
     out_dir: impl AsRef<Path>,
     repo_base: impl AsRef<Path>,
     reference: &str,
 ) -> Result<()> {
-    let data = read(dir_entry.path()).context("Reading email file")?;
+    let data = {
+        let mut lock = FileLock::lock(dir_entry.path().to_str().context("error")?, true, false)
+            .context("Locking file email file")?;
+        let mut bytes = Vec::with_capacity(lock.file.metadata().map(|m| m.len() as usize + 1).unwrap_or(0));
+        lock.file.read_to_end(&mut bytes).context("Reading email file")?;
+        bytes
+    };
     let updates = GovUkChange::from_eml(&String::from_utf8(data)?).context("Parsing email")?;
     let repo = Repository::open(repo_base).context("Opening repo")?;
     let mut parent = Some(repo.find_reference(reference)?.peel_to_commit()?);
@@ -217,8 +244,8 @@ fn process_email_update_file(
         )?;
     }
     let done_path = out_dir.as_ref().join(to_dir_name).join(dir_entry.file_name());
-    create_dir_all(done_path.parent().unwrap()).context("Creating outbox dir")?;
-    rename(dir_entry.path(), &done_path).context(format!(
+    fs::create_dir_all(done_path.parent().unwrap()).context("Creating outbox dir")?;
+    fs::rename(dir_entry.path(), &done_path).context(format!(
         "Renaming file {} to {}",
         dir_entry.path().to_str().unwrap_or_default(),
         &done_path.to_str().unwrap_or_default()
@@ -312,7 +339,7 @@ mod test {
         let mut mailer = SmtpClient::new(addr, ClientSecurity::None).unwrap().transport();
         mailer.send(email.into()).unwrap();
         assert_eq!(
-            std::fs::read_dir("tests/tmp/inbox/gov.uk/brexit@example.org")
+            fs::read_dir("tests/tmp/inbox/gov.uk/brexit@example.org")
                 .unwrap()
                 .count(),
             1
