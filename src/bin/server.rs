@@ -51,12 +51,12 @@ impl Handler for MailHandler {
 
     fn data(&mut self, _domain: &str, from: &str, _is8bit: bool, to: &[String]) -> mailin::DataResult {
         let email_path = inbox_path_for_email(&self.inbox, from, to);
-        match EmailWrite::create(&email_path) {
+        match EmailWrite::create(email_path) {
             Ok(writer) => {
                 println!(
                     "{}: Writing email to {}",
                     self.peer_addr,
-                    email_path.to_str().unwrap_or_default()
+                    writer.path.to_str().unwrap_or_default()
                 );
                 mailin::DataResult::Ok(Box::new(writer))
             }
@@ -68,22 +68,34 @@ impl Handler for MailHandler {
     }
 }
 
-struct EmailWrite(FileLock);
+struct EmailWrite {
+    path: PathBuf,
+    lock: FileLock,
+}
 
 impl EmailWrite {
-    fn create(path: &PathBuf) -> Result<Self> {
+    fn create(path: PathBuf) -> Result<Self> {
         fs::create_dir_all(path.parent().unwrap())?;
-        Ok(EmailWrite(FileLock::lock(&path.to_str().unwrap(), false, true)?))
+        Ok(EmailWrite {
+            lock: FileLock::lock(&path.to_str().unwrap(), true, true)?,
+            path,
+        })
     }
 }
 
 impl Write for EmailWrite {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.0.file.write(buf)
+        self.lock.file.write(buf)
     }
 
     fn flush(&mut self) -> std::io::Result<()> {
-        self.0.file.flush()
+        self.lock.file.flush()
+    }
+}
+
+impl Drop for EmailWrite {
+    fn drop(&mut self) {
+        println!("Finished writing {}", self.path.to_string_lossy());
     }
 }
 
@@ -314,7 +326,7 @@ mod test {
     use gitgov_rs::{email_update::GovUkChange, git::CommitBuilder};
     use lettre::{ClientSecurity, SmtpClient, Transport};
     use lettre_email::EmailBuilder;
-    use std::{net::TcpListener, path::Path};
+    use std::{fs, net::TcpListener, path::Path};
 
     #[test]
     fn test_receive_updates() {
@@ -348,7 +360,7 @@ mod test {
 
     #[test]
     fn test_obtain_changes() -> Result<()> {
-        const REPO_DIR: &str = "tests/tmp/repo";
+        const REPO_DIR: &str = "tests/tmp/test_obtain_changes";
         let _ = std::fs::remove_dir_all(REPO_DIR);
         let repo = Repository::init_bare(REPO_DIR)?;
         let test_sig = Signature::now("name", "email")?;
@@ -366,6 +378,7 @@ mod test {
             &repo,
             None,
         )?;
+        repo.reference("refs/heads/main", commit.id(), false, "log_message")?;
 
         assert_eq!(commit.message(), Some("some time: testing the stuff [Test Category]"));
         assert_eq!(
@@ -380,7 +393,6 @@ mod test {
                 .size(),
             20122
         );
-        assert_eq!(commit.tree()?.get_path(Path::new("government/uploads/system/uploads/attachment_data/file/792313/bus-open-data-consultation-response.pdf"))?.to_object(&repo)?.as_blob().unwrap().size(), 643743);
         Ok(())
     }
 }
