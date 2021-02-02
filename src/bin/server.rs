@@ -4,11 +4,10 @@ use dotenv::dotenv;
 use file_lock::FileLock;
 use git2::{Commit, Repository, Signature};
 use gitgov_rs::{email_update::GovUkChange, git::CommitBuilder, retrieve_doc};
-use mailin::{Handler, MailResult, SessionBuilder};
 use std::{
     collections::VecDeque,
     fs,
-    io::{BufRead, BufReader, Read, Write},
+    io::{self, BufRead, BufReader, Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
     thread,
@@ -16,19 +15,19 @@ use std::{
 };
 use url::Url;
 
-#[derive(Clone)]
 struct MailHandler {
     peer_addr: SocketAddr,
     inbox: PathBuf,
+    data: Option<EmailWrite>,
 }
 
-impl Handler for MailHandler {
-    fn helo(&mut self, ip: std::net::IpAddr, domain: &str) -> mailin::HeloResult {
+impl mailin::Handler for MailHandler {
+    fn helo(&mut self, ip: std::net::IpAddr, domain: &str) -> mailin::Response {
         println!("{}: HELO {} {}", self.peer_addr, ip, domain);
-        mailin::HeloResult::Ok
+        mailin::response::OK
     }
 
-    fn mail(&mut self, ip: std::net::IpAddr, domain: &str, from: &str) -> mailin::MailResult {
+    fn mail(&mut self, ip: std::net::IpAddr, domain: &str, from: &str) -> mailin::Response {
         println!("{}: MAIL {}", self.peer_addr, from);
         let from_match = dotenv::var("FROM_FILTER")
             .ok()
@@ -38,18 +37,18 @@ impl Handler for MailHandler {
                 "{}: {}({}) tried to send some junk, purporting to be {}",
                 self.peer_addr, domain, ip, from
             );
-            MailResult::NoService
+            mailin::response::NO_SERVICE
         } else {
-            MailResult::Ok
+            mailin::response::OK
         }
     }
 
-    fn rcpt(&mut self, to: &str) -> mailin::RcptResult {
+    fn rcpt(&mut self, to: &str) -> mailin::Response {
         println!("{}: RCPT {}", self.peer_addr, to);
-        mailin::RcptResult::Ok
+        mailin::response::OK
     }
 
-    fn data(&mut self, _domain: &str, from: &str, _is8bit: bool, to: &[String]) -> mailin::DataResult {
+    fn data_start(&mut self, _domain: &str, from: &str, _is8bit: bool, to: &[String]) -> mailin::Response {
         let email_path = inbox_path_for_email(&self.inbox, from, to);
         match EmailWrite::create(email_path) {
             Ok(writer) => {
@@ -58,12 +57,35 @@ impl Handler for MailHandler {
                     self.peer_addr,
                     writer.path.to_str().unwrap_or_default()
                 );
-                mailin::DataResult::Ok(Box::new(writer))
+                self.data = Some(writer);
+                mailin::response::OK
             }
             Err(err) => {
                 println!("{}: Error mapping email envelope to inbox : {}", self.peer_addr, err);
-                mailin::DataResult::InternalError
+                mailin::response::INTERNAL_ERROR
             }
+        }
+    }
+
+    fn data(&mut self, buf: &[u8]) -> io::Result<()> {
+        if let Some(writer) = &mut self.data {
+            writer.write_all(buf)
+        } else {
+            Err(io::ErrorKind::NotConnected.into())
+        }
+    }
+
+    fn data_end(&mut self) -> mailin::Response {
+        if let Some(mut writer) = self.data.take() {
+            match writer.flush() {
+                Ok(()) => mailin::response::OK,
+                Err(err) => {
+                    println!("Error flushing : {}", err);
+                    mailin::response::INTERNAL_ERROR
+                }
+            }
+        } else {
+            mailin::response::INTERNAL_ERROR
         }
     }
 }
@@ -114,8 +136,9 @@ fn receive_updates_on_socket(mut stream: TcpStream, remote_addr: SocketAddr, inb
     let handler = MailHandler {
         peer_addr,
         inbox: inbox.as_ref().to_path_buf(),
+        data: None,
     };
-    let mut session = SessionBuilder::new("gitgov").build(remote_addr.ip(), handler);
+    let mut session = mailin::SessionBuilder::new("gitgov").build(remote_addr.ip(), handler);
     session.greeting().write_to(&mut stream)?;
 
     let mut buf_read = BufReader::new(stream.try_clone()?);
@@ -126,10 +149,6 @@ fn receive_updates_on_socket(mut stream: TcpStream, remote_addr: SocketAddr, inb
         let len = buf_read.read_line(&mut command)?;
         let command = if len == 0 {
             break;
-        } else if command.starts_with('.') && command != ".\r\n" {
-            // undo dot stuffing
-            println!("Undoing dot stuffing on line {:?}", command);
-            &command[1..]
         } else {
             &command[..]
         };
