@@ -10,8 +10,6 @@ use std::{
     io::{self, BufRead, BufReader, Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
-    thread,
-    time,
 };
 use url::Url;
 
@@ -182,21 +180,19 @@ fn main() -> Result<()> {
 
     if dotenv::var("DISABLE_PROCESS_UPDATES").is_err() {
         push(&repo_path)?;
-        thread::spawn(move || {
-            loop {
-                let count = process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, ARCHIVE_DIR, &repo_path, &reference)
-                    .expect("the processing fails, the repo may be unclean");
-                if count > 0 {
-                    println!("Processed {} update emails, pushing", count);
-                    push(&repo_path).unwrap_or_else(|err| println!("Push failed : {}", err));
-                }
-                thread::sleep(time::Duration::from_secs(1));
-            }
-        });
     }
 
     let socket = TcpListener::bind("0.0.0.0:25")?;
     loop {
+        if dotenv::var("DISABLE_PROCESS_UPDATES").is_err() {
+            let count = process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, ARCHIVE_DIR, &repo_path, &reference)
+                .expect("the processing fails, the repo may be unclean");
+            if count > 0 {
+                println!("Processed {} update emails, pushing", count);
+                push(&repo_path).unwrap_or_else(|err| println!("Push failed : {}", err));
+            }
+        }
+
         let (stream, remote_addr) = socket.accept()?;
         if let Err(err) = receive_updates_on_socket(stream, remote_addr, "inbox") {
             println!("Closed SMTP session due to error : {}", err);
