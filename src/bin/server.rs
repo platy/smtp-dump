@@ -231,9 +231,11 @@ fn process_updates_in_dir(
         if to_inbox.metadata()?.is_dir() {
             for email in fs::read_dir(to_inbox.path())? {
                 let email = email?;
-                process_email_update_file(to_inbox.file_name(), &email, &out_dir, &repo, reference).context(
+                if !(process_email_update_file(to_inbox.file_name(), &email, &out_dir, &repo, reference).context(
                     format!("Failed processing {}", email.path().to_str().unwrap_or_default()),
-                )?;
+                )?) {
+                    eprintln!("Non-fatal failure processing {}", email.path().to_str().unwrap_or_default())
+                }
                 count += 1;
             }
         }
@@ -247,7 +249,7 @@ fn process_email_update_file(
     out_dir: impl AsRef<Path>,
     repo_base: impl AsRef<Path>,
     reference: &str,
-) -> Result<()> {
+) -> Result<bool> {
     let data = {
         let mut lock = FileLock::lock(dir_entry.path().to_str().context("error")?, true, false)
             .context("Locking file email file")?;
@@ -259,7 +261,13 @@ fn process_email_update_file(
     let repo = Repository::open(repo_base).context("Opening repo")?;
     let mut parent = Some(repo.find_reference(reference)?.peel_to_commit()?);
     for change in &updates {
-        parent = Some(handle_change(change, &repo, parent).context(format!("Processing change {:?}", change))?);
+        match handle_change(change, &repo, parent) {
+            Ok(p) => parent = Some(p),
+            Err(err) => {
+                eprintln!("Error processing change: {:?}: {}", change, &err);
+                return Ok(false);
+            }
+        }
     }
     // successfully handled, 'commit' the new commits by updating the reference and then move email to outbox
     if let Some(commit) = parent {
@@ -277,7 +285,7 @@ fn process_email_update_file(
         dir_entry.path().to_str().unwrap_or_default(),
         &done_path.to_str().unwrap_or_default()
     ))?;
-    Ok(())
+    Ok(true)
 }
 
 fn handle_change<'repo>(

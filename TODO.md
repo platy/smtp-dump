@@ -17,6 +17,7 @@
 - [x] add push
 - [x] don't follow links off site
 - [ ] deploy properly
+- [x] fixed dotstuffing properly
 
 Then db cleanup, including these features
 - read the update info from the document
