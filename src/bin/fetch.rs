@@ -31,7 +31,7 @@ fn main() -> Result<()> {
         let doc = retrieve_doc(&url)?;
         urls.extend(doc.content.attachments().unwrap_or_default().iter().cloned());
 
-        let mut path = Path::new(&dir).join(doc.url.path().strip_prefix("/").unwrap());
+        let mut path = Path::new(&dir).join(doc.url.path().strip_prefix('/').unwrap());
         if doc.content.is_html() {
             assert!(path.set_extension("html"));
         }

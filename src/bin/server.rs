@@ -97,7 +97,7 @@ impl EmailWrite {
     fn create(path: PathBuf) -> Result<Self> {
         fs::create_dir_all(path.parent().unwrap())?;
         Ok(EmailWrite {
-            lock: FileLock::lock(&path.to_str().unwrap(), true, true)?,
+            lock: FileLock::lock(path.to_str().unwrap(), true, true)?,
             path,
         })
     }
@@ -119,7 +119,7 @@ impl Drop for EmailWrite {
     }
 }
 
-fn inbox_path_for_email(inbox: &PathBuf, from: &str, to: &[String]) -> PathBuf {
+fn inbox_path_for_email(inbox: &Path, from: &str, to: &[String]) -> PathBuf {
     let from_domain = from.split('@').nth(1);
     inbox
         .join(from_domain.unwrap_or(from))
@@ -150,7 +150,7 @@ fn receive_updates_on_socket(mut stream: TcpStream, remote_addr: SocketAddr, inb
         } else {
             &command[..]
         };
-        let result = session.process(&command.as_bytes());
+        let result = session.process(command.as_bytes());
         match result.action {
             mailin::Action::Close => {
                 println!("{}: CLOSE", peer_addr);
@@ -234,7 +234,10 @@ fn process_updates_in_dir(
                 if !(process_email_update_file(to_inbox.file_name(), &email, &out_dir, &repo, reference).context(
                     format!("Failed processing {}", email.path().to_str().unwrap_or_default()),
                 )?) {
-                    eprintln!("Non-fatal failure processing {}", email.path().to_str().unwrap_or_default())
+                    eprintln!(
+                        "Non-fatal failure processing {}",
+                        email.path().to_str().unwrap_or_default()
+                    )
                 }
                 count += 1;
             }
@@ -298,7 +301,7 @@ fn handle_change<'repo>(
     repo: &'repo Repository,
     parent: Option<Commit<'repo>>,
 ) -> Result<Commit<'repo>> {
-    let mut commit_builder = CommitBuilder::new(&repo, parent)?;
+    let mut commit_builder = CommitBuilder::new(repo, parent)?;
 
     fetch_change(url, |path, bytes| {
         // write the blob

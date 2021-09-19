@@ -42,8 +42,8 @@ impl<'repo> CommitBuilder<'repo> {
         let tree = self.repo.find_tree(oid)?;
         let oid = self.repo.commit(
             None,
-            &author,
-            &committer,
+            author,
+            committer,
             message,
             &tree,
             self.parent.as_ref().map(|c| vec![c]).unwrap_or_default().as_slice(),

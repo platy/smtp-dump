@@ -11,7 +11,7 @@ pub mod git;
 pub fn retrieve_doc(url: &Url) -> Result<Doc> {
     // TODO return the doc and the urls of attachments, probably remove async, I can just use a thread pool and worker queue
     println!("retrieving url : {}", url);
-    let response = get(&url.as_str()).call();
+    let response = get(url.as_str()).call();
     if let Some(err) = response.synthetic_error() {
         bail!("Error retrieving : {}", err);
     }
@@ -19,7 +19,7 @@ pub fn retrieve_doc(url: &Url) -> Result<Doc> {
     if response.content_type() == "text/html" {
         let content = response.into_string().with_context(|| url.clone())?;
         let doc = Doc {
-            content: DocContent::html(&content, Some(&url))?,
+            content: DocContent::html(&content, Some(url))?,
             url: url.to_owned(),
         };
 
