@@ -18,6 +18,7 @@
 - [x] don't follow links off site
 - [ ] deploy properly
 - [x] fixed dotstuffing properly
+- [ ] Timeout the smtp connection after some point if nothing is sent
 
 Then db cleanup, including these features
 - read the update info from the document

@@ -19,14 +19,20 @@ struct MailHandler {
     data: Option<EmailWrite>,
 }
 
+macro_rules! maillog {
+    ($peer_addr:expr, $($arg:tt)*) => {
+        println!("{} [{}]: {}", Utc::now(), $peer_addr, format_args!($($arg)*));
+    };
+}
+
 impl mailin::Handler for MailHandler {
     fn helo(&mut self, ip: std::net::IpAddr, domain: &str) -> mailin::Response {
-        println!("{}: HELO {} {}", self.peer_addr, ip, domain);
+        maillog!(self.peer_addr, "HELO {} {}", ip, domain);
         mailin::response::OK
     }
 
     fn mail(&mut self, ip: std::net::IpAddr, domain: &str, from: &str) -> mailin::Response {
-        println!("{}: MAIL {}", self.peer_addr, from);
+        maillog!(self.peer_addr, "MAIL {}", from);
         let from_match = dotenv::var("FROM_FILTER")
             .ok()
             .map(|from_filter| from.contains(&from_filter));
@@ -42,7 +48,7 @@ impl mailin::Handler for MailHandler {
     }
 
     fn rcpt(&mut self, to: &str) -> mailin::Response {
-        println!("{}: RCPT {}", self.peer_addr, to);
+        maillog!(self.peer_addr, "RCPT {}", to);
         mailin::response::OK
     }
 
@@ -59,7 +65,7 @@ impl mailin::Handler for MailHandler {
                 mailin::response::OK
             }
             Err(err) => {
-                println!("{}: Error mapping email envelope to inbox : {}", self.peer_addr, err);
+                maillog!(self.peer_addr, "Error mapping email envelope to inbox : {}", err);
                 mailin::response::INTERNAL_ERROR
             }
         }
@@ -153,7 +159,7 @@ fn receive_updates_on_socket(mut stream: TcpStream, remote_addr: SocketAddr, inb
         let result = session.process(command.as_bytes());
         match result.action {
             mailin::Action::Close => {
-                println!("{}: CLOSE", peer_addr);
+                maillog!(peer_addr, "CLOSE");
                 result.write_to(&mut stream)?;
                 break;
             }
