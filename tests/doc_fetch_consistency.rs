@@ -6,6 +6,25 @@ use gitgov_rs::{
 };
 use pretty_assertions::assert_eq;
 
+macro_rules! assert_doc {
+    ($doc:expr, $url:expr, $body:expr) => {
+        let doc = $doc;
+        let url = $url;
+        assert_eq!(doc.url.as_str(), url);
+        if let DocContent::DiffableHtml(content, _, _) = &doc.content {
+            let diff = html_diff::get_differences(content, &remove_ids($body).unwrap()); // TODO pre strip test data
+            assert!(
+                diff.is_empty(),
+                "Found differences in file at url {} : {:#?}",
+                url,
+                diff,
+            );
+        } else {
+            panic!("Fail")
+        }
+    };
+}
+
 #[test]
 fn fetch_and_strip_doc() {
     let doc = retrieve_doc(
@@ -14,10 +33,10 @@ fn fetch_and_strip_doc() {
             .unwrap(),
     )
     .unwrap();
-    assert_doc(
+    assert_doc!(
         &doc,
         "https://www.gov.uk/change-name-deed-poll/make-an-adult-deed-poll",
-        include_str!("govuk/change-name-deed-poll/make-an-adult-deed-poll.html"),
+        include_str!("govuk/change-name-deed-poll/make-an-adult-deed-poll.html")
     );
     assert_eq!(
         doc.content.history().unwrap(),
@@ -33,10 +52,10 @@ fn fetch_and_strip_doc_with_attachments() {
             .unwrap(),
     )
     .unwrap();
-    assert_doc(
+    assert_doc!(
         &doc,
         "https://www.gov.uk/government/consultations/bus-services-act-2017-bus-open-data",
-        include_str!("govuk/government/consultations/bus-services-act-2017-bus-open-data.html"),
+        include_str!("govuk/government/consultations/bus-services-act-2017-bus-open-data.html")
     );
     assert_eq!(doc.content.attachments().unwrap(),
         vec![
@@ -75,21 +94,6 @@ fn fetch_file() {
         ),
     );
     assert!(doc.content.attachments().is_none());
-}
-
-fn assert_doc(doc: &Doc, url: &str, body: &str) {
-    assert_eq!(doc.url.as_str(), url,);
-    if let DocContent::DiffableHtml(content, _, _) = &doc.content {
-        let diff = html_diff::get_differences(content, &remove_ids(body).unwrap()); // TODO pre strip test data
-        assert!(
-            diff.is_empty(),
-            "Found differences in file at url {} : {:#?}",
-            url,
-            diff,
-        );
-    } else {
-        panic!("Fail")
-    }
 }
 
 fn assert_file(doc: &Doc, url: &str, body: &[u8]) {
