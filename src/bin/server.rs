@@ -1,15 +1,18 @@
 use anyhow::{bail, Context, Result};
+use async_io::{block_on, Async, Timer};
 use chrono::{SecondsFormat, Utc};
 use dotenv::dotenv;
 use file_lock::FileLock;
+use futures_lite::{io::BufReader, AsyncBufReadExt, FutureExt};
 use git2::{Commit, Repository, Signature};
 use gitgov_rs::{email_update::GovUkChange, git::CommitBuilder, retrieve_doc};
 use std::{
     collections::VecDeque,
     fs,
-    io::{self, BufRead, BufReader, Read, Write},
+    io::{self, Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
+    time::Duration,
 };
 use url::Url;
 
@@ -135,8 +138,9 @@ fn inbox_path_for_email(inbox: &Path, from: &str, to: &[String]) -> PathBuf {
 }
 
 /// accepts emails from gov.uk and saves them in `inbox/{from}/{to}/{datetime}.eml
-fn receive_updates_on_socket(mut stream: TcpStream, remote_addr: SocketAddr, inbox: impl AsRef<Path>) -> Result<()> {
+fn receive_updates_on_socket(mut stream: TcpStream, inbox: impl AsRef<Path>) -> Result<()> {
     let peer_addr = stream.peer_addr()?;
+    let remote_addr = stream.peer_addr().unwrap();
     let handler = MailHandler {
         peer_addr,
         inbox: inbox.as_ref().to_path_buf(),
@@ -145,12 +149,15 @@ fn receive_updates_on_socket(mut stream: TcpStream, remote_addr: SocketAddr, inb
     let mut session = mailin::SessionBuilder::new("gitgov").build(remote_addr.ip(), handler);
     session.greeting().write_to(&mut stream)?;
 
-    let mut buf_read = BufReader::new(stream.try_clone()?);
+    let mut buf_read = BufReader::new(Async::new(stream.try_clone()?)?);
     let mut command = String::new();
 
     loop {
         command.clear();
-        let len = buf_read.read_line(&mut command)?;
+        let len = block_on(buf_read.read_line(&mut command).or(async {
+            Timer::after(Duration::from_secs(5 * 60)).await;
+            Err(std::io::ErrorKind::TimedOut.into())
+        }))?;
         let command = if len == 0 {
             break;
         } else {
@@ -188,22 +195,25 @@ fn main() -> Result<()> {
         push(&repo_path)?;
     }
 
-    let socket = TcpListener::bind("0.0.0.0:25")?;
-    loop {
-        if dotenv::var("DISABLE_PROCESS_UPDATES").is_err() {
-            let count = process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, ARCHIVE_DIR, &repo_path, &reference)
-                .expect("the processing fails, the repo may be unclean");
-            if count > 0 {
-                println!("Processed {} update emails, pushing", count);
-                push(&repo_path).unwrap_or_else(|err| println!("Push failed : {}", err));
+    let socket = TcpListener::bind(("0.0.0.0", 25))?;
+    socket.incoming().for_each(|res| match res {
+        Ok(conn) => {
+            if dotenv::var("DISABLE_PROCESS_UPDATES").is_err() {
+                let count = process_updates_in_dir(EMAILS_FROM_GOVUK_PATH, ARCHIVE_DIR, &repo_path, &reference)
+                    .expect("the processing fails, the repo may be unclean");
+                if count > 0 {
+                    println!("Processed {} update emails, pushing", count);
+                    push(&repo_path).unwrap_or_else(|err| println!("Push failed : {}", err));
+                }
+            }
+
+            if let Err(err) = receive_updates_on_socket(conn, "inbox") {
+                println!("Closed SMTP session due to error : {}", err);
             }
         }
-
-        let (stream, remote_addr) = socket.accept()?;
-        if let Err(err) = receive_updates_on_socket(stream, remote_addr, "inbox") {
-            println!("Closed SMTP session due to error : {}", err);
-        }
-    }
+        Err(err) => eprintln!("Failure accepting connection :{}", err),
+    });
+    Ok(())
 }
 
 fn push(repo_base: impl AsRef<Path>) -> Result<()> {
@@ -366,8 +376,8 @@ mod test {
         let socket = TcpListener::bind("localhost:0").unwrap();
         let addr = socket.local_addr().unwrap();
         std::thread::spawn(move || {
-            let (stream, remote_addr) = socket.accept().unwrap();
-            receive_updates_on_socket(stream, remote_addr, "tests/tmp/inbox").unwrap();
+            let (stream, _) = socket.accept().unwrap();
+            receive_updates_on_socket(stream, "tests/tmp/inbox").unwrap();
         });
 
         let email = EmailBuilder::new()
@@ -423,7 +433,7 @@ mod test {
                 .as_blob()
                 .unwrap()
                 .size(),
-            20122
+            20929
         );
         Ok(())
     }

@@ -18,7 +18,9 @@
 - [x] don't follow links off site
 - [ ] deploy properly
 - [x] fixed dotstuffing properly
-- [ ] Timeout the smtp connection after some point if nothing is sent
+- [x] Timeout the smtp connection after some point if nothing is sent - https://datatracker.ietf.org/doc/html/rfc5321#section-4.5.3.2
+- [ ] Write Emails to tempfile and move into place to avoid corrupt files on error
+- [ ] Accept multiple incoming SMTP connections at the same time
 
 Then db cleanup, including these features
 - read the update info from the document
