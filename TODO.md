@@ -42,3 +42,8 @@ stop daemon:
 ```sh
 killall server
 ```
+
+restart:
+```sh
+cargo build; killall server; date >> logs; bash -c 'setsid cargo run </dev/null &>>logs & jobs -p %1'
+```
