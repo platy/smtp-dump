@@ -947,8 +947,9 @@ checksum = "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4"
 
 [[package]]
 name = "mailin"
-version = "0.4.1"
-source = "git+https://gitlab.com/mikebush/mailin.git#b74138578fc71d2a1a45c11d7a0e4b4ee756f085"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5732fe49074d0a62123d780f951be27cf642fac909b8bbc8249b753dcbb344b8"
 dependencies = [
  "base64 0.13.0",
  "either",
