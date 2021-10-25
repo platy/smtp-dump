@@ -60,7 +60,7 @@ impl mailin::Handler for MailHandler {
         match EmailWrite::create(email_path) {
             Ok(writer) => {
                 println!(
-                    "{}: Writing email to {}",
+                    "{}: Writing email to {} (via tmp)",
                     self.peer_addr,
                     writer.path.to_str().unwrap_or_default()
                 );
@@ -83,8 +83,8 @@ impl mailin::Handler for MailHandler {
     }
 
     fn data_end(&mut self) -> mailin::Response {
-        if let Some(mut writer) = self.data.take() {
-            match writer.flush() {
+        if let Some(writer) = self.data.take() {
+            match writer.end() {
                 Ok(()) => mailin::response::OK,
                 Err(err) => {
                     println!("Error flushing : {}", err);
@@ -99,16 +99,24 @@ impl mailin::Handler for MailHandler {
 
 struct EmailWrite {
     path: PathBuf,
+    temp_file: temp_file::TempFile,
     lock: FileLock,
 }
 
 impl EmailWrite {
     fn create(path: PathBuf) -> Result<Self> {
         fs::create_dir_all(path.parent().unwrap())?;
+        let temp_file = temp_file::empty();
         Ok(EmailWrite {
-            lock: FileLock::lock(path.to_str().unwrap(), true, true)?,
+            lock: FileLock::lock(temp_file.path().to_str().unwrap(), true, true)?,
+            temp_file,
             path,
         })
+    }
+
+    fn end(mut self) -> std::io::Result<()> {
+        self.flush()?;
+        fs::rename(self.temp_file.path(), &self.path)
     }
 }
 

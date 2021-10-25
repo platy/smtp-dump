@@ -689,6 +689,7 @@ dependencies = [
  "mailparse",
  "pretty_assertions",
  "scraper",
+ "temp-file",
  "ureq",
  "url",
 ]
@@ -2158,6 +2159,12 @@ name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
+
+[[package]]
+name = "temp-file"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee71da36831f42b12ba5fa8bf3fc7a54305f9091f1fcb2409a80ad29aaf06152"
 
 [[package]]
 name = "tempfile"
