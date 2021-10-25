@@ -1,22 +1,13 @@
 [package]
-name = "gitgov-rs"
+name = "smtp-dump"
 version = "0.1.0"
 authors = ["Mike Bush <platy@njk.onl>"]
 edition = "2018"
 
-default-run = "server"
-
 [dependencies]
-scraper = "0.12.0"
-lol_html = "0.2.0"
 chrono = "0.4.19"
-mailparse = "0.13.0"
 mailin = "0.5.0"
-ureq = "1.5.1"
-url = "2.1.1"
-git2 = { version = "0.13.12", default-features = false, features = ["ssh"] }
 anyhow = "1.0.33"
-dotenv = "0.15.0"
 file-lock = "1.1.20"
 async-io = "1.6.0"
 futures-lite = "1.12.0"
@@ -24,7 +15,5 @@ temp-file = "0.1.6"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"
-html-diff = "0.0.6"
-html5ever = "0.25"
 lettre = "0.9"
 lettre_email = "0.9"
