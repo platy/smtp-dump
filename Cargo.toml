@@ -1,6 +1,8 @@
 [package]
 name = "smtp-dump"
 description = "Receive-only SMTP server which saves every email that is sent to it"
+license = "Apache-2.0"
+repository = "https://github.com/platy/smtp-dump"
 categories = ["network-programming", "email"]
 keywords = ["smtp"]
 version = "0.1.0"
