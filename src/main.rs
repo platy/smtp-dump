@@ -129,7 +129,7 @@ fn inbox_path_for_email(inbox: &Path, from: &str, to: &[String]) -> PathBuf {
         .with_extension("eml")
 }
 
-/// accepts emails from gov.uk and saves them in `inbox/{from}/{to}/{datetime}.eml
+/// accepts emails and saves them in `inbox/{from}/{to}/{datetime}.eml
 fn receive_updates_on_socket(mut stream: TcpStream, inbox: impl AsRef<Path>) -> Result<()> {
     let peer_addr = stream.peer_addr()?;
     let remote_addr = stream.peer_addr().unwrap();
