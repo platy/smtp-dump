@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: update-tracker
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smtp-dump
+spec:
+  selector:
+    matchLabels:
+      app: smtp-dump
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: smtp-dump
+    spec:
+      containers:
+      - name: smtp-dump
+        image: rg.nl-ams.scw.cloud/njkonl/smtp-dump:0.1.0
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+          requests:
+            memory: "80Mi"
+            cpu: "50m"
+        ports:
+        - containerPort: 25
+          hostPort: 25
+        volumeMounts:
+          - mountPath: "/inbox"
+            name: inbox
+        env:
+          - name: INBOX_DIR
+            value: /inbox
+      imagePullSecrets:
+      - name: regcred
+      volumes:
+        - name: inbox
+          persistentVolumeClaim:
+            claimName: update-tracker

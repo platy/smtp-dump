@@ -24,8 +24,8 @@ macro_rules! maillog {
 }
 
 impl mailin::Handler for MailHandler {
-    fn helo(&mut self, ip: std::net::IpAddr, domain: &str) -> mailin::Response {
-        maillog!(self.peer_addr, "HELO {} {}", ip, domain);
+    fn helo(&mut self, _ip: std::net::IpAddr, _domain: &str) -> mailin::Response {
+        // maillog!(self.peer_addr, "HELO {} {}", ip, domain);
         mailin::response::OK
     }
 
@@ -174,10 +174,12 @@ fn receive_updates_on_socket(mut stream: TcpStream, inbox: impl AsRef<Path>) -> 
 }
 
 fn main() -> Result<()> {
-    let socket = TcpListener::bind(("0.0.0.0", 25))?;
+    let socket = TcpListener::bind("0.0.0.0:25")?;
+    let inbox_dir_opt = std::env::var("INBOX_DIR");
+    let inbox_dir = inbox_dir_opt.as_deref().unwrap_or("inbox");
     socket.incoming().for_each(|res| match res {
         Ok(conn) => {
-            if let Err(err) = receive_updates_on_socket(conn, "inbox") {
+            if let Err(err) = receive_updates_on_socket(conn, inbox_dir) {
                 println!("Closed SMTP session due to error : {}", err);
             }
         }
