@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
       - name: smtp-dump
-        image: rg.nl-ams.scw.cloud/njkonl/smtp-dump:0.1.0
+        image: rg.nl-ams.scw.cloud/njkonl/smtp-dump:0.1.1
         resources:
           limits:
             memory: "128Mi"
@@ -41,14 +41,16 @@ spec:
         - containerPort: 25
           hostPort: 25
         volumeMounts:
-          - mountPath: "/inbox"
-            name: inbox
+          - mountPath: "/mail"
+            name: mail
         env:
           - name: INBOX_DIR
-            value: /inbox
+            value: /mail/inbox
+          - name: TEMP_DIR
+            value: /mail/tmp
       imagePullSecrets:
       - name: regcred
       volumes:
-        - name: inbox
+        - name: mail
           persistentVolumeClaim:
             claimName: update-tracker

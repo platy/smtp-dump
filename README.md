@@ -36,5 +36,5 @@ killall smtp-dump
 ### Restart:
 
 ```sh
-killall smtp-dump; date >> logs; bash -c 'setsid smtp-dump </dev/null &>>logs & jobs -p %1'
+killall smtp-dump; date >> logs; bash -c 'setsid cargo run </dev/null &>>logs & jobs -p %1'
 ```

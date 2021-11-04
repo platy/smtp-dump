@@ -1,7 +1,6 @@
 use anyhow::{bail, Context, Result};
 use async_io::{block_on, Async, Timer};
 use chrono::{SecondsFormat, Utc};
-use file_lock::FileLock;
 use futures_lite::{io::BufReader, AsyncBufReadExt, FutureExt};
 use std::{
     fs,
@@ -83,34 +82,34 @@ impl mailin::Handler for MailHandler {
 
 struct EmailWrite {
     path: PathBuf,
-    temp_file: temp_file::TempFile,
-    lock: FileLock,
+    temp_path: PathBuf,
+    file: fs::File,
 }
 
 impl EmailWrite {
     fn create(path: PathBuf) -> Result<Self> {
         fs::create_dir_all(path.parent().unwrap())?;
-        let temp_file = temp_file::empty();
+        let temp_path = email_tmp_dir().join(path.file_name().unwrap());
         Ok(EmailWrite {
-            lock: FileLock::lock(temp_file.path().to_str().unwrap(), true, true)?,
-            temp_file,
+            file: fs::File::create(&temp_path)?,
+            temp_path,
             path,
         })
     }
 
     fn end(mut self) -> std::io::Result<()> {
         self.flush()?;
-        fs::rename(self.temp_file.path(), &self.path)
+        fs::rename(&self.temp_path, &self.path)
     }
 }
 
-impl Write for EmailWrite {
+impl io::Write for EmailWrite {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.lock.file.write(buf)
+        self.file.write(buf)
     }
 
     fn flush(&mut self) -> std::io::Result<()> {
-        self.lock.file.flush()
+        self.file.flush()
     }
 }
 
@@ -127,6 +126,10 @@ fn inbox_path_for_email(inbox: &Path, from: &str, to: &[String]) -> PathBuf {
         .join(to.join(","))
         .join(Utc::now().to_rfc3339_opts(SecondsFormat::AutoSi, true))
         .with_extension("eml")
+}
+
+fn email_tmp_dir() -> PathBuf {
+    std::env::var("TEMP_DIR").unwrap_or_else(|_| "tmp".to_owned()).into()
 }
 
 /// accepts emails and saves them in `inbox/{from}/{to}/{datetime}.eml
@@ -177,6 +180,7 @@ fn main() -> Result<()> {
     let socket = TcpListener::bind("0.0.0.0:25")?;
     let inbox_dir_opt = std::env::var("INBOX_DIR");
     let inbox_dir = inbox_dir_opt.as_deref().unwrap_or("inbox");
+    fs::create_dir_all(email_tmp_dir())?;
     socket.incoming().for_each(|res| match res {
         Ok(conn) => {
             if let Err(err) = receive_updates_on_socket(conn, inbox_dir) {
