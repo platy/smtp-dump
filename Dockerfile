@@ -20,3 +20,4 @@ COPY --from=builder /app/target/release/smtp-dump /usr/local/bin
 ENTRYPOINT ["/usr/local/bin/smtp-dump"]
 EXPOSE 25
 ENV INBOX_DIR /inbox
+ENV TEMP_DIR /tmp
